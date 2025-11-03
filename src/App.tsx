@@ -20,7 +20,6 @@ import { TemplateManager } from "./components/TemplateManager";
 import { SchemaForm } from "./components/SchemaForm";
 import { usePDFManager } from "./hooks/usePDFManager";
 import { parseSchema } from "./utils/schemaParser";
-import schemaJSON from "../schema.json";
 
 // Configure PDF.js worker
 GlobalWorkerOptions.workerSrc = new URL(
@@ -329,14 +328,24 @@ export default function App() {
 
   // Parse schema on mount
   useEffect(() => {
-    try {
-      const schema = parseSchema(schemaJSON);
-      setParsedSchema(schema);
-    } catch (err) {
-      console.error("Schema parse error:", err);
-      error("Failed to load schema");
-    }
-  }, []);
+    const loadSchema = async () => {
+      try {
+        // Load schema dynamically to avoid build-time issues
+        const response = await fetch('/schema.json');
+        if (response.ok) {
+          const schema = await response.json();
+          const parsed = parseSchema(schema);
+          setParsedSchema(parsed);
+        } else {
+          console.warn('Schema.json not found, schema forms will be disabled');
+        }
+      } catch (err) {
+        console.error('Schema parse error:', err);
+        error('Failed to load schema');
+      }
+    };
+    loadSchema();
+  }, [error]);
 
   /** Save to localStorage */
   useEffect(() => {
