@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { GlobalWorkerOptions } from "pdfjs-dist";
 import "pdfjs-dist/web/pdf_viewer.css";
 import {
@@ -13,6 +13,14 @@ import {
   useSearch,
   type ColoredHighlight,
 } from "@anaralabs/lector";
+import { Toast, useToast } from "./components/Toast";
+import { Modal } from "./components/Modal";
+import { PDFUpload, PDFList } from "./components";
+import { TemplateManager } from "./components/TemplateManager";
+import { SchemaForm } from "./components/SchemaForm";
+import { usePDFManager } from "./hooks/usePDFManager";
+import { parseSchema } from "./utils/schemaParser";
+import schemaJSON from "../schema.json";
 
 // Configure PDF.js worker
 GlobalWorkerOptions.workerSrc = new URL(
@@ -76,17 +84,35 @@ function PDFViewerContent({
   searchTerm,
   onSearchResultsChange,
   onUpdateSearchHighlights,
+  onPageChange,
+  onJumpToPageReady,
 }: {
   highlights: LabeledHighlight[];
   onAddHighlight: (rect: Rect, pageNumber: number, label: string) => void;
   searchTerm: string;
   onSearchResultsChange: (count: number) => void;
   onUpdateSearchHighlights: (searchHighlights: LabeledHighlight[]) => void;
+  onPageChange: (page: number, total: number) => void;
+  onJumpToPageReady: (jumpFn: (page: number) => void) => void;
 }) {
   // Use Lector hooks
   const selectionDimensions = useSelectionDimensions();
-  const { currentPageNumber } = usePdfJump();
+  const { currentPageNumber, totalPages, jumpToPage } = usePdfJump();
   const { searchResults, findExactMatches } = useSearch();
+  
+  // Expose jumpToPage function to parent
+  useEffect(() => {
+    if (jumpToPage) {
+      onJumpToPageReady(jumpToPage);
+    }
+  }, [jumpToPage, onJumpToPageReady]);
+  
+  // Notify parent of page changes
+  useEffect(() => {
+    if (currentPageNumber && totalPages) {
+      onPageChange(currentPageNumber, totalPages);
+    }
+  }, [currentPageNumber, totalPages, onPageChange]);
   
   // State for pending selection
   const [pendingSelection, setPendingSelection] = useState<any>(null);
@@ -202,6 +228,9 @@ function PDFViewerContent({
 
 /** ---------- Main App Component ---------- */
 export default function App() {
+  // Toast notifications
+  const { toasts, success, error, info, removeToast } = useToast();
+
   /** Projects */
   const [projects, setProjects] = useState<string[]>(() => {
     const saved = localStorage.getItem("projects");
@@ -211,6 +240,53 @@ export default function App() {
 
   /** PDF Source */
   const [source, setSource] = useState("/Kim2016.pdf");
+  const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
+  const pdfBlobUrlRef = useRef<string | null>(null);
+
+  // PDF Manager
+  const {
+    pdfs,
+    currentPdfId,
+    currentPDF,
+    setCurrentPdfId,
+    uploadPDF,
+    removePDF,
+    getCurrentPDFUrl,
+    loading: pdfLoading,
+  } = usePDFManager(currentProject);
+
+  // Load blob URL when PDF changes
+  useEffect(() => {
+    if (currentPdfId) {
+      getCurrentPDFUrl().then((url) => {
+        if (url) {
+          // Revoke old URL if exists
+          if (pdfBlobUrlRef.current) {
+            URL.revokeObjectURL(pdfBlobUrlRef.current);
+          }
+          setPdfBlobUrl(url);
+          pdfBlobUrlRef.current = url;
+        }
+      });
+    } else {
+      // Clear blob URL if no PDF selected
+      if (pdfBlobUrlRef.current) {
+        URL.revokeObjectURL(pdfBlobUrlRef.current);
+        pdfBlobUrlRef.current = null;
+      }
+      setPdfBlobUrl(null);
+    }
+    
+    return () => {
+      if (pdfBlobUrlRef.current) {
+        URL.revokeObjectURL(pdfBlobUrlRef.current);
+        pdfBlobUrlRef.current = null;
+      }
+    };
+  }, [currentPdfId, getCurrentPDFUrl]);
+
+  // Determine PDF source (blob URL or static URL)
+  const pdfSource = pdfBlobUrl || source;
 
   /** Search */
   const [searchTerm, setSearchTerm] = useState("");
@@ -234,9 +310,33 @@ export default function App() {
     return saved ? JSON.parse(saved) : {};
   });
 
-  /** Page Navigation */
+  /** Page Navigation - synced with PDFViewerContent */
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(9); // Kim2016.pdf has 9 pages
+  const [totalPages, setTotalPages] = useState(9);
+  const [jumpToPageFn, setJumpToPageFn] = useState<((page: number) => void) | null>(null);
+
+  /** Handle jumpToPage ready from PDFViewerContent */
+  const handleJumpToPageReady = useCallback((jumpFn: (page: number) => void) => {
+    setJumpToPageFn(() => jumpFn);
+  }, []);
+
+  // Schema parsing
+  const [parsedSchema, setParsedSchema] = useState<ReturnType<typeof parseSchema> | null>(null);
+  const [useSchemaForm, setUseSchemaForm] = useState(false);
+
+  // Template Manager modal
+  const [showTemplateManager, setShowTemplateManager] = useState(false);
+
+  // Parse schema on mount
+  useEffect(() => {
+    try {
+      const schema = parseSchema(schemaJSON);
+      setParsedSchema(schema);
+    } catch (err) {
+      console.error("Schema parse error:", err);
+      error("Failed to load schema");
+    }
+  }, []);
 
   /** Save to localStorage */
   useEffect(() => {
@@ -255,6 +355,12 @@ export default function App() {
     localStorage.setItem(`proj:${currentProject}:pageForm`, JSON.stringify(pageForm));
   }, [currentProject, pageForm]);
 
+  /** Handle page change from PDFViewerContent */
+  const handlePageChange = useCallback((page: number, total: number) => {
+    setCurrentPage(page);
+    setTotalPages(total);
+  }, []);
+
   /** Switch project */
   const switchProject = (proj: string) => {
     setCurrentProject(proj);
@@ -264,6 +370,7 @@ export default function App() {
     setTemplates(savedTemplates ? JSON.parse(savedTemplates) : defaultTemplates);
     const savedForm = localStorage.getItem(`proj:${proj}:pageForm`);
     setPageForm(savedForm ? JSON.parse(savedForm) : {});
+    success(`Switched to project: ${proj}`);
   };
 
   /** Add/Delete projects */
@@ -272,12 +379,15 @@ export default function App() {
     if (name && !projects.includes(name)) {
       setProjects([...projects, name]);
       switchProject(name);
+      success(`Project "${name}" created`);
+    } else if (name && projects.includes(name)) {
+      error("Project name already exists");
     }
   };
 
   const deleteProject = () => {
     if (currentProject === "default") {
-      alert("Cannot delete default project");
+      error("Cannot delete default project");
       return;
     }
     if (confirm(`Delete project "${currentProject}"?`)) {
@@ -287,6 +397,7 @@ export default function App() {
       localStorage.removeItem(`proj:${currentProject}:templates`);
       localStorage.removeItem(`proj:${currentProject}:pageForm`);
       switchProject("default");
+      success(`Project "${currentProject}" deleted`);
     }
   };
 
@@ -303,6 +414,7 @@ export default function App() {
       height: rect.height,
     };
     setHighlights((prev) => [...prev, newHighlight]);
+    success("Highlight added");
   };
 
   /** Relabel highlight */
@@ -314,18 +426,57 @@ export default function App() {
       setHighlights((prev) =>
         prev.map((x) => (x.id === id ? { ...x, label: newLabel } : x))
       );
+      success("Highlight updated");
     }
   };
 
   /** Delete highlight */
   const deleteHighlight = (id: string) => {
     setHighlights((prev) => prev.filter((x) => x.id !== id));
+    success("Highlight deleted");
   };
 
   /** Jump to page */
-  const jumpToPage = (page: number) => {
+  const jumpToPage = useCallback((page: number) => {
     if (page < 1 || page > totalPages) return;
-    setCurrentPage(page);
+    if (jumpToPageFn) {
+      jumpToPageFn(page);
+    } else {
+      setCurrentPage(page);
+    }
+  }, [totalPages, jumpToPageFn]);
+
+  /** PDF Upload handlers */
+  const handlePDFUpload = async (file: File) => {
+    try {
+      const metadata = await uploadPDF(file);
+      if (metadata) {
+        success(`PDF "${file.name}" uploaded successfully`);
+        setCurrentPdfId(metadata.id);
+      } else {
+        error("Failed to upload PDF");
+      }
+    } catch (err) {
+      error(err instanceof Error ? err.message : "Failed to upload PDF");
+    }
+  };
+
+  const handlePDFSelect = (id: string) => {
+    setCurrentPdfId(id);
+    info("PDF selected");
+  };
+
+  const handlePDFDelete = async (id: string) => {
+    try {
+      const result = await removePDF(id);
+      if (result) {
+        success("PDF deleted");
+      } else {
+        error("Failed to delete PDF");
+      }
+    } catch (err) {
+      error(err instanceof Error ? err.message : "Failed to delete PDF");
+    }
   };
 
   /** Template input */
@@ -335,11 +486,25 @@ export default function App() {
     setPageForm((prev) => ({ ...prev, [key]: value }));
   };
 
+  /** Schema form handler */
+  const handleSchemaDataChange = (path: string, value: any) => {
+    // For schema forms, we store data differently
+    // Use path as key (e.g., "I_StudyMetadataAndIdentification.studyID")
+    setPageForm((prev) => ({ ...prev, [path]: value }));
+  };
+
+  /** Template Manager handlers */
+  const handleSaveTemplates = (newTemplates: Record<number, FieldTemplate[]>) => {
+    setTemplates(newTemplates);
+    success("Templates saved");
+    setShowTemplateManager(false);
+  };
+
   /** Export JSON */
   const exportJSON = () => {
     const data = {
       project: currentProject,
-      source,
+      source: pdfSource,
       highlights,
       templates,
       pageForm,
@@ -353,6 +518,8 @@ export default function App() {
     a.href = url;
     a.download = `${currentProject}_export_${Date.now()}.json`;
     a.click();
+    URL.revokeObjectURL(url);
+    success("Data exported as JSON");
   };
 
   /** Export CSV */
@@ -362,7 +529,7 @@ export default function App() {
     ];
     Object.entries(pageForm).forEach(([key, value]) => {
       const [page, field] = key.split(":");
-      rows.push([currentProject, page, field, value, "", ""]);
+      rows.push([currentProject, page || "", field || "", String(value || ""), "", ""]);
     });
     highlights.forEach((h) => {
       rows.push([currentProject, "", "", "", h.label, String(h.pageNumber)]);
@@ -374,6 +541,8 @@ export default function App() {
     a.href = url;
     a.download = `${currentProject}_export_${Date.now()}.csv`;
     a.click();
+    URL.revokeObjectURL(url);
+    success("Data exported as CSV");
   };
 
   /** Handle search highlights from PDFViewerContent */
@@ -393,6 +562,9 @@ export default function App() {
 
   return (
     <div className="flex h-screen bg-gray-50">
+      {/* Toast notifications */}
+      <Toast toasts={toasts} onRemove={removeToast} />
+
       {/* Left sidebar */}
       <aside className="w-64 border-r p-3 space-y-4 bg-white overflow-y-auto">
         {/* Project selector */}
@@ -410,22 +582,43 @@ export default function App() {
                 </option>
               ))}
             </select>
-            <button className="px-2 border rounded" onClick={addProject}>
+            <button className="px-2 border rounded" onClick={addProject} aria-label="Add project">
               +
             </button>
-            <button className="px-2 border rounded" onClick={deleteProject}>
+            <button className="px-2 border rounded" onClick={deleteProject} aria-label="Delete project">
               🗑
             </button>
           </div>
         </div>
 
-        {/* PDF Source */}
+        {/* PDF Management */}
+        <div className="space-y-2">
+          <label className="text-xs font-semibold">PDF Management</label>
+          <PDFUpload
+            onFileSelect={handlePDFUpload}
+            loading={pdfLoading}
+            error={null}
+          />
+          {pdfs.length > 0 && (
+            <PDFList
+              pdfs={pdfs}
+              currentPdfId={currentPdfId}
+              onSelect={handlePDFSelect}
+              onDelete={handlePDFDelete}
+              loading={pdfLoading}
+            />
+          )}
+        </div>
+
+        {/* PDF Source Input (fallback) */}
         <div className="space-y-1">
-          <label className="text-xs font-semibold">PDF Source</label>
+          <label className="text-xs font-semibold">Or load from URL:</label>
           <input
             className="w-full border p-1 rounded text-sm"
             value={source}
             onChange={(e) => setSource(e.target.value)}
+            placeholder="Enter PDF URL..."
+            disabled={!!currentPdfId}
           />
         </div>
 
@@ -447,10 +640,10 @@ export default function App() {
 
         {/* Export */}
         <div className="space-x-2">
-          <button onClick={exportJSON} className="text-sm bg-green-200 px-2 py-1 rounded">
+          <button onClick={exportJSON} className="text-sm bg-green-200 px-2 py-1 rounded hover:bg-green-300" aria-label="Export JSON">
             Export JSON
           </button>
-          <button onClick={exportCSV} className="text-sm bg-red-200 px-2 py-1 rounded">
+          <button onClick={exportCSV} className="text-sm bg-red-200 px-2 py-1 rounded hover:bg-red-300" aria-label="Export CSV">
             Export CSV
           </button>
         </div>
@@ -460,13 +653,15 @@ export default function App() {
       <main className="flex-1 grid grid-cols-[1fr_340px]">
         {/* PDF Viewer */}
         <div className="overflow-hidden">
-          <Root source={source} className="w-full h-screen">
+          <Root source={pdfSource} className="w-full h-screen">
             <PDFViewerContent
               highlights={highlights}
               onAddHighlight={addHighlight}
               searchTerm={searchTerm}
               onSearchResultsChange={setSearchResultCount}
               onUpdateSearchHighlights={handleSearchHighlights}
+              onPageChange={handlePageChange}
+              onJumpToPageReady={handleJumpToPageReady}
             />
           </Root>
         </div>
@@ -477,56 +672,102 @@ export default function App() {
           <div className="space-y-1">
             <label className="text-xs font-semibold">Page</label>
             <div className="flex items-center gap-2">
-              <button className="px-2 border rounded" onClick={() => jumpToPage(currentPage - 1)}>
+              <button 
+                className="px-2 border rounded hover:bg-gray-100" 
+                onClick={() => jumpToPage(currentPage - 1)}
+                disabled={currentPage <= 1}
+                aria-label="Previous page"
+              >
                 ◀
               </button>
               <span className="text-sm">{currentPage} / {totalPages}</span>
-              <button className="px-2 border rounded" onClick={() => jumpToPage(currentPage + 1)}>
+              <button 
+                className="px-2 border rounded hover:bg-gray-100" 
+                onClick={() => jumpToPage(currentPage + 1)}
+                disabled={currentPage >= totalPages}
+                aria-label="Next page"
+              >
                 ▶
               </button>
             </div>
           </div>
 
+          {/* Form Type Toggle */}
+          <div className="flex items-center gap-2">
+            <button
+              className={`flex-1 px-3 py-2 text-xs border rounded ${
+                !useSchemaForm ? 'bg-blue-500 text-white' : 'bg-gray-100'
+              }`}
+              onClick={() => setUseSchemaForm(false)}
+            >
+              Template Form
+            </button>
+            <button
+              className={`flex-1 px-3 py-2 text-xs border rounded ${
+                useSchemaForm ? 'bg-blue-500 text-white' : 'bg-gray-100'
+              }`}
+              onClick={() => setUseSchemaForm(true)}
+            >
+              Schema Form
+            </button>
+          </div>
+
+          {/* Template Manager Button */}
+          {!useSchemaForm && (
+            <div className="mb-2">
+              <button
+                onClick={() => setShowTemplateManager(true)}
+                aria-label="Manage field templates"
+                className="w-full px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 flex items-center justify-center space-x-2"
+              >
+                <span>⚙️</span>
+                <span>Manage Templates</span>
+              </button>
+            </div>
+          )}
+
           {/* Per-Page Fields */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-sm">Fields for page {currentPage}</h3>
-              <button
-                className="text-xs px-2 border rounded"
-                onClick={() => {
-                  const lbl = prompt("Add field (label)?");
-                  if (!lbl) return;
-                  const id = lbl.toLowerCase().replace(/\W+/g, "_");
-                  setTemplates((prev) => ({
-                    ...prev,
-                    [currentPage]: [...(prev[currentPage] || []), { id, label: lbl }]
-                  }));
+              <h3 className="font-semibold text-sm">
+                {useSchemaForm ? 'Schema Fields' : `Fields for page ${currentPage}`}
+              </h3>
+            </div>
+
+            {useSchemaForm && parsedSchema ? (
+              <SchemaForm
+                sections={parsedSchema}
+                data={pageForm}
+                onDataChange={handleSchemaDataChange}
+                onLinkHighlight={(path) => {
+                  info(`Link highlight to field: ${path}`);
+                  // TODO: Implement highlight linking
                 }}
-              >
-                + field
-              </button>
-            </div>
+              />
+            ) : (
+              <>
+                {currentPageTemplate.length === 0 && (
+                  <div className="text-xs text-gray-500">No fields for this page.</div>
+                )}
 
-            {currentPageTemplate.length === 0 && (
-              <div className="text-xs text-gray-500">No fields for this page.</div>
+                <div className="space-y-2">
+                  {currentPageTemplate.map((f) => {
+                    const keyField = `${currentPage}:${f.id}`;
+                    return (
+                      <div key={f.id} className="space-y-1">
+                        <label className="text-xs">{f.label}</label>
+                        <input
+                          className="w-full border p-1 rounded text-sm"
+                          placeholder={f.placeholder || ""}
+                          value={pageForm[keyField] || ""}
+                          onChange={(e) => handleTemplateInput(f.id, e.target.value, currentPage)}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
             )}
-
-            <div className="space-y-2">
-              {currentPageTemplate.map((f) => {
-                const keyField = `${currentPage}:${f.id}`;
-                return (
-                  <div key={f.id} className="space-y-1">
-                    <label className="text-xs">{f.label}</label>
-                    <input
-                      className="w-full border p-1 rounded text-sm"
-                      placeholder={f.placeholder || ""}
-                      value={pageForm[keyField] || ""}
-                      onChange={(e) => handleTemplateInput(f.id, e.target.value, currentPage)}
-                    />
-                  </div>
-                );
-              })}
-            </div>
           </div>
 
           {/* Highlights */}
@@ -577,6 +818,15 @@ export default function App() {
           </div>
         </aside>
       </main>
+
+      {/* Template Manager Modal */}
+      <TemplateManager
+        isOpen={showTemplateManager}
+        onClose={() => setShowTemplateManager(false)}
+        templates={templates}
+        onSaveTemplates={handleSaveTemplates}
+        totalPages={totalPages}
+      />
     </div>
   );
 }
