@@ -114,7 +114,7 @@ function PDFViewerContent({
   const { jumpToPage, jumpToHighlightRects } = usePdfJump();
   const currentPageNumber = usePDFPageNumber();
   const pdf = usePdf();
-  const getPdfPageProxy = usePdf((state) => state.getPdfPageProxy);
+  // Access getPdfPageProxy safely through the pdf object
   const totalPages = pdf?.numPages || 0;
   const { searchResults, search } = useSearch();
   
@@ -159,7 +159,7 @@ function PDFViewerContent({
 
           try {
             // Get page proxy for accurate rect calculation
-            const pageProxy = getPdfPageProxy(match.pageNumber);
+            const pageProxy = pdf ? await pdf.getPage(match.pageNumber) : null;
 
             if (pageProxy) {
               // Use calculateHighlightRects for accurate positioning
@@ -235,7 +235,7 @@ function PDFViewerContent({
       onSearchResultsChange(0);
       onSearchResultsData([]);
     }
-  }, [searchResults, searchTerm, getPdfPageProxy, onSearchResultsChange, onSearchResultsData, onUpdateSearchHighlights]);
+  }, [searchResults, searchTerm, pdf, onSearchResultsChange, onSearchResultsData, onUpdateSearchHighlights]);
   
   // Handle text selection - store pending selection
   useEffect(() => {
@@ -831,41 +831,40 @@ export default function App() {
       <main className="flex-1 grid grid-cols-[1fr_340px]">
         {/* PDF Viewer with Thumbnails and Zoom Controls */}
         <div className="overflow-hidden flex flex-col">
-          {/* Zoom Controls Bar */}
-          <div className="flex items-center justify-between px-4 py-2 border-b bg-gray-50">
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowThumbnails(!showThumbnails)}
-                className="px-3 py-1 text-sm border rounded hover:bg-gray-200"
-                title="Toggle thumbnails"
-              >
-                {showThumbnails ? '◀ Hide' : '▶ Show'} Thumbnails
-              </button>
+          {/* PDF Viewer Grid with Optional Thumbnails - SINGLE Root wrapping everything */}
+          <Root source={pdfSource} className="flex-1 flex flex-col" zoomOptions={{ minZoom: 0.5, maxZoom: 3 }}>
+            {/* Zoom Controls Bar - NOW INSIDE ROOT */}
+            <div className="flex items-center justify-between px-4 py-2 border-b bg-gray-50">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowThumbnails(!showThumbnails)}
+                  className="px-3 py-1 text-sm border rounded hover:bg-gray-200"
+                  title="Toggle thumbnails"
+                >
+                  {showThumbnails ? '◀ Hide' : '▶ Show'} Thumbnails
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <ZoomOut className="cursor-pointer hover:bg-gray-200 p-1 rounded" />
+                <CurrentZoom className="text-sm font-mono" />
+                <ZoomIn className="cursor-pointer hover:bg-gray-200 p-1 rounded" />
+              </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <ZoomOut className="cursor-pointer hover:bg-gray-200 p-1 rounded" />
-              <CurrentZoom className="text-sm font-mono" />
-              <ZoomIn className="cursor-pointer hover:bg-gray-200 p-1 rounded" />
-            </div>
-          </div>
-
-          {/* PDF Viewer Grid with Optional Thumbnails */}
-          <div className={`flex-1 grid ${showThumbnails ? 'grid-cols-[200px_1fr]' : 'grid-cols-[0_1fr]'} transition-all duration-300`}>
-            {/* Thumbnails Sidebar */}
-            {showThumbnails && (
-              <div className="border-r bg-gray-50 overflow-y-auto">
-                <Root source={pdfSource} className="w-full h-full">
+            {/* PDF Content Grid */}
+            <div className={`flex-1 grid ${showThumbnails ? 'grid-cols-[200px_1fr]' : 'grid-cols-[0_1fr]'} transition-all duration-300`}>
+              {/* Thumbnails Sidebar */}
+              {showThumbnails && (
+                <div className="border-r bg-gray-50 overflow-y-auto">
                   <Thumbnails className="p-2 space-y-2">
                     <Thumbnail className="border rounded hover:border-blue-500 cursor-pointer" />
                   </Thumbnails>
-                </Root>
-              </div>
-            )}
+                </div>
+              )}
 
-            {/* Main PDF Viewer */}
-            <div className="overflow-hidden">
-              <Root source={pdfSource} className="w-full h-full" zoomOptions={{ minZoom: 0.5, maxZoom: 3 }}>
+              {/* Main PDF Viewer */}
+              <div className="overflow-hidden">
                 <PDFViewerContent
                   highlights={highlights}
                   onAddHighlight={addHighlight}
@@ -876,9 +875,9 @@ export default function App() {
                   onJumpToPageReady={handleJumpToPageReady}
                   onSearchResultsData={handleSearchResultsData}
                 />
-              </Root>
+              </div>
             </div>
-          </div>
+          </Root>
         </div>
 
         {/* Right sidebar */}

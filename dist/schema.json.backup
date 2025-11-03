@@ -1,0 +1,460 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TraceableComprehensiveDataExtractionFormSchema_Optimized",
+  "description": "An optimized, comprehensive JSON schema for medical literature data extraction, requiring inline source text citations and location context for every data point to ensure traceability and robust validation.",
+  "type": "object",
+  "definitions": {
+    "SourcedString": {
+      "type": "object",
+      "properties": {
+        "value": { "type": "string" },
+        "source_text": { "type": "string", "description": "The exact sentence or phrase from the source document where the value was found." },
+        "source_location": { "type": "string", "description": "The location in the document (e.g., Table 1, Page 4, Figure 2 Legend)." }
+      },
+      "required": ["value"]
+    },
+    "SourcedNumber": {
+      "type": "object",
+      "properties": {
+        "value": { "type": "number" },
+        "source_text": { "type": "string", "description": "The exact sentence or phrase from the source document where the value was found." },
+        "source_location": { "type": "string", "description": "The location in the document." }
+      },
+      "required": ["value"]
+    },
+    "SourcedInteger": {
+      "type": "object",
+      "properties": {
+        "value": { "type": "integer" },
+        "source_text": { "type": "string", "description": "The exact sentence or phrase from the source document where the value was found." },
+        "source_location": { "type": "string", "description": "The location in the document." }
+      },
+      "required": ["value"]
+    },
+    "SourcedEnumBase": {
+       "type": "object",
+       "properties": {
+         "value": { "type": "string" },
+         "source_text": { "type": "string", "description": "The exact sentence or phrase from the source document where the value was found." },
+         "source_location": { "type": "string", "description": "The location in the document." }
+       },
+       "required": ["value"]
+     },
+    "statisticalReporting": {
+      "type": "object",
+      "description": "Reviewer Instruction: For continuous variables, you must record both the values AND how they were reported (Mean/SD, Median/IQR, or Median/Range). Each value must be traceable.",
+      "properties": {
+        "reportingMethod": {
+          "allOf": [
+            { "$ref": "#/definitions/SourcedEnumBase" },
+            {
+              "properties": {
+                "value": {
+                  "enum": ["mean_sd", "median_iqr", "median_range", "mean_range", "other"]
+                }
+              }
+            }
+          ],
+          "description": "The statistical method used to report the central tendency and dispersion."
+        },
+        "mean": { "$ref": "#/definitions/SourcedNumber" },
+        "standardDeviation": { "$ref": "#/definitions/SourcedNumber" },
+        "median": { "$ref": "#/definitions/SourcedNumber" },
+        "iqr": {
+          "type": "object",
+          "description": "Interquartile Range",
+          "properties": {
+            "q1": { "$ref": "#/definitions/SourcedNumber" },
+            "q3": { "$ref": "#/definitions/SourcedNumber" }
+          }
+        },
+        "range": {
+          "type": "object",
+          "properties": {
+            "min": { "$ref": "#/definitions/SourcedNumber" },
+            "max": { "$ref": "#/definitions/SourcedNumber" }
+          }
+        }
+      }
+    },
+    "countPercentage": {
+      "type": "object",
+      "description": "Structure for capturing counts and percentages for categorical data, with traceability.",
+      "properties": {
+        "count": { "$ref": "#/definitions/SourcedInteger" },
+        "percentage": { "$ref": "#/definitions/SourcedNumber" }
+      }
+    },
+    "statisticalComparison": {
+      "type": "object",
+      "description": "Structure for capturing the results of statistical comparisons, with traceability.",
+      "properties": {
+        "pValue": { "$ref": "#/definitions/SourcedNumber" },
+        "effectMeasureType": {
+           "allOf": [
+            { "$ref": "#/definitions/SourcedEnumBase" },
+            {
+              "properties": {
+                "value": {
+                  "enum": ["Odds Ratio (OR)", "Risk Ratio (RR)", "Hazard Ratio (HR)", "Beta Coefficient", "Other"]
+                }
+              }
+            }
+          ],
+          "description": "The type of statistical measure reported."
+        },
+        "effectMeasureValue": { "$ref": "#/definitions/SourcedNumber" },
+        "confidenceInterval": {
+          "type": "object",
+          "properties": {
+            "lower": { "$ref": "#/definitions/SourcedNumber" },
+            "upper": { "$ref": "#/definitions/SourcedNumber" },
+            "confidenceLevel": { "$ref": "#/definitions/SourcedNumber", "description": "e.g., 95%" }
+          }
+        }
+      }
+    },
+    "riskEnum": {
+      "type": "string",
+      "enum": ["Low", "Moderate", "Serious", "Critical", "High", "No Information", "Some Concerns"]
+    },
+    "SourcedRiskEnum": {
+      "type": "object",
+      "properties": {
+        "value": { "$ref": "#/definitions/riskEnum" },
+        "source_text": { "type": "string", "description": "The exact sentence or phrase from the source document where the value was found." },
+        "source_location": { "type": "string", "description": "The location in the document (e.g., Methods section, Risk of Bias table/figure)." }
+      },
+      "required": ["value"]
+    }
+  },
+  "properties": {
+    "I_StudyMetadataAndIdentification": {
+      "type": "object",
+      "description": "I. Study Metadata and Identification",
+      "properties": {
+        "studyID": { "$ref": "#/definitions/SourcedString", "description": "Study ID: What is the unique identifier (DOI or PMID)?" },
+        "authorAndYear": {
+          "type": "object",
+          "description": "Author and Year: Who is the first author and what is the year of publication?",
+          "properties": {
+            "firstAuthor": { "$ref": "#/definitions/SourcedString" },
+            "yearOfPublication": { "$ref": "#/definitions/SourcedInteger" }
+          }
+        },
+        "country": { "$ref": "#/definitions/SourcedString", "description": "Country: Where was the study conducted?" }
+      }
+    },
+    "II_RiskOfBiasAssessment": {
+      "type": "object",
+      "description": "II. Risk of Bias Assessment.",
+      "properties": {
+        "toolUsed": { "$ref": "#/definitions/SourcedString", "description": "Tool Used: Which tool was used to assess the risk of bias?" },
+        "overallRisk": { "$ref": "#/definitions/SourcedRiskEnum", "description": "Overall Risk: What is the overall risk of bias?" },
+        "domainSpecificRisks": {
+          "type": "object",
+          "description": "Domain-Specific Risks",
+          "properties": {
+            "confounding": { "$ref": "#/definitions/SourcedRiskEnum" },
+            "selectionOfParticipants": { "$ref": "#/definitions/SourcedRiskEnum" },
+            "measurementOfOutcomes": { "$ref": "#/definitions/SourcedRiskEnum" },
+            "missingData": { "$ref": "#/definitions/SourcedRiskEnum" },
+            "classificationOfInterventions": { "$ref": "#/definitions/SourcedRiskEnum" },
+            "deviationsFromIntendedInterventions": { "$ref": "#/definitions/SourcedRiskEnum" },
+            "selectionOfReportedResult": { "$ref": "#/definitions/SourcedRiskEnum" }
+          }
+        }
+      }
+    },
+    "III_StudyDesignAndPurpose": {
+      "type": "object",
+      "description": "III. Study Design and Purpose",
+      "properties": {
+        "researchQuestion": { "$ref": "#/definitions/SourcedString", "description": "Research Question: What was the primary research question or purpose of the study?" },
+        "studyDesign": { "$ref": "#/definitions/SourcedString", "description": "Study Design: What was the study design?" },
+        "controlGroupDefinition": { "$ref": "#/definitions/SourcedString", "description": "Control Group Definition: How exactly was the comparator/control group defined?" }
+      }
+    },
+    "IV_PatientCharacteristics_Baseline": {
+      "type": "object",
+      "description": "IV. Patient Characteristics (Baseline).",
+      "properties": {
+        "sampleSize": {
+          "type": "object",
+          "properties": {
+            "totalPatients": { "$ref": "#/definitions/SourcedInteger", "description": "Sample Size: What was the total number of patients?" },
+            "preventiveSDCGroupSize": { "$ref": "#/definitions/SourcedInteger", "description": "Preventive SDC Group size:" },
+            "controlGroupSize": { "$ref": "#/definitions/SourcedInteger", "description": "Control Group size:" }
+          }
+        },
+        "inclusionExclusionCriteria": {
+          "type": "object",
+          "description": "Inclusion/Exclusion Criteria",
+          "properties": {
+            "inclusionCriteria": { "type": "array", "items": { "$ref": "#/definitions/SourcedString" } },
+            "exclusionCriteria": { "type": "array", "items": { "$ref": "#/definitions/SourcedString" } }
+          }
+        },
+        "ageInformation": {
+          "type": "object",
+          "description": "Age Information",
+          "properties": {
+            "preventiveSDCGroup": { "$ref": "#/definitions/statisticalReporting" },
+            "controlGroup": { "$ref": "#/definitions/statisticalReporting" }
+          }
+        },
+        "genderDistribution_Male": {
+          "type": "object",
+          "description": "Gender Distribution: Number or percentage of males",
+          "properties": {
+            "preventiveSDCGroup": { "$ref": "#/definitions/countPercentage" },
+            "controlGroup": { "$ref": "#/definitions/countPercentage" }
+          }
+        },
+        "initialNeurologicalStatus": {
+          "type": "object",
+          "description": "Initial Neurological Status",
+          "properties": {
+            "scaleUsed": { "$ref": "#/definitions/SourcedString", "description": "Which scale was primarily used?" },
+            "scores": {
+              "type": "object",
+              "properties": {
+                "preventiveSDCGroup": { "$ref": "#/definitions/statisticalReporting" },
+                "controlGroup": { "$ref": "#/definitions/statisticalReporting" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "V_ClinicalAndRadiologicalFactors_Baseline": {
+      "type": "object",
+      "description": "V. Clinical and Radiological Factors (Baseline).",
+      "properties": {
+        "hydrocephalus": {
+          "type": "object",
+          "properties": {
+            "preventiveSDCGroup": { "$ref": "#/definitions/countPercentage" },
+            "controlGroup": { "$ref": "#/definitions/countPercentage" }
+          }
+        },
+        "brainstemCompression_4thVentricleEffacement": {
+          "type": "object",
+          "properties": {
+            "incidence": {
+              "type": "object",
+              "properties": {
+                "preventiveSDCGroup": { "$ref": "#/definitions/countPercentage" },
+                "controlGroup": { "$ref": "#/definitions/countPercentage" }
+              }
+            },
+            "gradingScaleUsed": { "$ref": "#/definitions/SourcedString" }
+          }
+        },
+        "nonCerebellarStrokeAreas": {
+          "type": "object",
+          "properties": {
+            "preventiveSDCGroup": { "$ref": "#/definitions/countPercentage" },
+            "controlGroup": { "$ref": "#/definitions/countPercentage" }
+          }
+        },
+        "vascularTerritory": {
+          "type": "object",
+          "properties": {
+            "PICA": { "properties": { "preventiveSDCGroup": { "$ref": "#/definitions/countPercentage" }, "controlGroup": { "$ref": "#/definitions/countPercentage" } } },
+            "SCA": { "properties": { "preventiveSDCGroup": { "$ref": "#/definitions/countPercentage" }, "controlGroup": { "$ref": "#/definitions/countPercentage" } } },
+            "AICA": { "properties": { "preventiveSDCGroup": { "$ref": "#/definitions/countPercentage" }, "controlGroup": { "$ref": "#/definitions/countPercentage" } } },
+            "Multiple": { "properties": { "preventiveSDCGroup": { "$ref": "#/definitions/countPercentage" }, "controlGroup": { "$ref": "#/definitions/countPercentage" } } }
+          }
+        },
+        "strokeVolume": {
+          "type": "object",
+          "properties": {
+            "unit": {
+               "allOf": [
+                { "$ref": "#/definitions/SourcedEnumBase" },
+                {
+                  "properties": {
+                    "value": {
+                      "enum": ["cm3", "mL", "ratio", "percentage_of_posterior_fossa", "other"]
+                    }
+                  }
+                }
+              ],
+               "description": "What unit was used for measurement?"
+            },
+            "volumeData": {
+              "type": "object",
+              "properties": {
+                "preventiveSDCGroup": { "$ref": "#/definitions/statisticalReporting" },
+                "controlGroup": { "$ref": "#/definitions/statisticalReporting" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "VI_SurgicalProcedureDetails": {
+      "type": "object",
+      "description": "VI. Surgical Procedure Details",
+      "properties": {
+        "indicationsForPreventiveSurgery": { "type": "array", "items": { "$ref": "#/definitions/SourcedString" } },
+        "procedureDescription": { "$ref": "#/definitions/SourcedString" },
+        "timingOfSurgery": {
+          "type": "object",
+          "properties": {
+            "unit": {
+               "allOf": [
+                { "$ref": "#/definitions/SourcedEnumBase" },
+                {
+                  "properties": {
+                    "value": {
+                       "enum": ["hours", "days", "minutes"]
+                    }
+                  }
+                }
+              ]
+            },
+            "timingData": { "$ref": "#/definitions/statisticalReporting" }
+          }
+        },
+        "additionalProcedures": {
+          "type": "object",
+          "properties": {
+            "EVD_placement": { "properties": { "preventiveSDCGroup": { "$ref": "#/definitions/countPercentage" }, "controlGroup": { "$ref": "#/definitions/countPercentage" } } },
+            "resectionOfInfarctedTissue": { "properties": { "preventiveSDCGroup": { "$ref": "#/definitions/countPercentage" } } },
+            "duraplasty": { "properties": { "preventiveSDCGroup": { "$ref": "#/definitions/countPercentage" } } }
+          }
+        }
+      }
+    },
+    "VII_OutcomeMeasuresAndFollowUp": {
+      "type": "object",
+      "description": "VII. Outcome Measures and Follow-Up",
+      "properties": {
+        "primaryOutcomeMeasure": { "$ref": "#/definitions/SourcedString" },
+        "functionalOutcomeScales": { "type": "array", "items": { "$ref": "#/definitions/SourcedString" } },
+        "followUpDuration": {
+          "type": "object",
+          "properties": {
+            "duration": { "$ref": "#/definitions/SourcedNumber" },
+            "unit": {
+               "allOf": [
+                { "$ref": "#/definitions/SourcedEnumBase" },
+                {
+                  "properties": {
+                    "value": {
+                       "enum": ["days", "weeks", "months", "years"]
+                    }
+                  }
+                }
+              ]
+            },
+            "reportingType": {
+               "allOf": [
+                { "$ref": "#/definitions/SourcedEnumBase" },
+                {
+                  "properties": {
+                    "value": {
+                       "enum": ["mean", "median", "maximum", "fixed", "range"]
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "complications": {
+          "type": "object",
+          "properties": {
+            "preventiveSDCGroup": { "type": "array", "items": { "type": "object", "properties": { "complicationType": { "$ref": "#/definitions/SourcedString" }, "frequency": { "$ref": "#/definitions/countPercentage" } } } },
+            "controlGroup": { "type": "array", "items": { "type": "object", "properties": { "complicationType": { "$ref": "#/definitions/SourcedString" }, "frequency": { "$ref": "#/definitions/countPercentage" } } } }
+          }
+        }
+      }
+    },
+    "VIII_KeyClinicalOutcomes": {
+      "type": "object",
+      "description": "VIII. Key Clinical Outcomes",
+      "properties": {
+        "crossoverAndAnalysis": {
+          "type": "object",
+          "properties": {
+            "crossoverToSurgery": { "$ref": "#/definitions/countPercentage" },
+            "analysisMethod": {
+               "allOf": [
+                { "$ref": "#/definitions/SourcedEnumBase" },
+                {
+                  "properties": {
+                    "value": {
+                       "enum": ["Intention-to-Treat (ITT)", "Per-Protocol", "As-Treated", "Unclear"]
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "functionalOutcomes_Dichotomized": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "timepoint": { "$ref": "#/definitions/SourcedString" },
+              "scaleUsed": { "$ref": "#/definitions/SourcedString" },
+              "favorableOutcomeDefinition": { "$ref": "#/definitions/SourcedString" },
+              "preventiveSDCGroup": { "properties": { "favorableOutcome": { "$ref": "#/definitions/countPercentage" } } },
+              "controlGroup": { "properties": { "favorableOutcome": { "$ref": "#/definitions/countPercentage" } } },
+              "statisticalComparison": { "$ref": "#/definitions/statisticalComparison" }
+            }
+          }
+        },
+        "mortalityRates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "timepoint": { "$ref": "#/definitions/SourcedString" },
+              "preventiveSDCGroup": { "$ref": "#/definitions/countPercentage" },
+              "controlGroup": { "$ref": "#/definitions/countPercentage" },
+              "statisticalComparison": { "$ref": "#/definitions/statisticalComparison" }
+            }
+          }
+        },
+        "predictorsOfOutcome_MultivariateAnalysis": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "predictorVariable": { "$ref": "#/definitions/SourcedString" },
+              "outcomePredicted": { "$ref": "#/definitions/SourcedString" },
+              "statisticalDetails": { "$ref": "#/definitions/statisticalComparison" },
+              "appliesTo": {
+                 "allOf": [
+                  { "$ref": "#/definitions/SourcedEnumBase" },
+                  {
+                    "properties": {
+                      "value": {
+                         "enum": ["Entire Cohort", "Surgical Group Only", "Control Group Only", "Subgroup", "Unclear"]
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "I_StudyMetadataAndIdentification",
+    "II_RiskOfBiasAssessment",
+    "III_StudyDesignAndPurpose",
+    "IV_PatientCharacteristics_Baseline",
+    "V_ClinicalAndRadiologicalFactors_Baseline",
+    "VI_SurgicalProcedureDetails",
+    "VII_OutcomeMeasuresAndFollowUp",
+    "VIII_KeyClinicalOutcomes"
+  ]
+}
