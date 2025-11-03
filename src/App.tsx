@@ -14,6 +14,17 @@ import {
   useSearch,
   usePdf,
   type ColoredHighlight,
+  // NEW: Zoom controls
+  ZoomIn,
+  ZoomOut,
+  CurrentZoom,
+  // NEW: Thumbnail navigation
+  Thumbnails,
+  Thumbnail,
+  // NEW: Selection tooltip
+  SelectionTooltip,
+  // NEW: Utilities
+  calculateHighlightRects,
 } from "@anaralabs/lector";
 import { Toast, useToast } from "./components/Toast";
 import { Modal } from "./components/Modal";
@@ -201,6 +212,26 @@ function PDFViewerContent({
   
   return (
     <div className="relative w-full h-full">
+      {/* Selection Tooltip with Highlight Button */}
+      <SelectionTooltip>
+        {pendingSelection && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={createHighlightFromSelection}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg shadow-lg hover:bg-green-700 transition-colors text-sm"
+            >
+              📝 Highlight Selected Text
+            </button>
+            <button
+              onClick={() => setPendingSelection(null)}
+              className="px-3 py-2 bg-gray-600 text-white rounded-lg shadow-lg hover:bg-gray-700 transition-colors text-sm"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+      </SelectionTooltip>
+
       <Pages className="p-6">
         <Page>
           <CanvasLayer />
@@ -208,24 +239,6 @@ function PDFViewerContent({
           <ColoredHighlightLayer highlights={coloredHighlights} />
         </Page>
       </Pages>
-      
-      {/* Floating "Highlight Selection" button */}
-      {pendingSelection && (
-        <div className="fixed bottom-4 right-4 z-50">
-          <button
-            onClick={createHighlightFromSelection}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg shadow-lg hover:bg-green-700 transition-colors"
-          >
-            📝 Highlight Selected Text
-          </button>
-          <button
-            onClick={() => setPendingSelection(null)}
-            className="ml-2 px-3 py-2 bg-gray-600 text-white rounded-lg shadow-lg hover:bg-gray-700 transition-colors"
-          >
-            ✕
-          </button>
-        </div>
-      )}
     </div>
   );
 }
@@ -330,6 +343,9 @@ export default function App() {
 
   // Template Manager modal
   const [showTemplateManager, setShowTemplateManager] = useState(false);
+
+  // UI state for new Lector features
+  const [showThumbnails, setShowThumbnails] = useState(true);
 
   // Parse schema on mount
   useEffect(() => {
@@ -666,19 +682,55 @@ export default function App() {
 
       {/* Main content */}
       <main className="flex-1 grid grid-cols-[1fr_340px]">
-        {/* PDF Viewer */}
-        <div className="overflow-hidden">
-          <Root source={pdfSource} className="w-full h-screen">
-            <PDFViewerContent
-              highlights={highlights}
-              onAddHighlight={addHighlight}
-              searchTerm={searchTerm}
-              onSearchResultsChange={setSearchResultCount}
-              onUpdateSearchHighlights={handleSearchHighlights}
-              onPageChange={handlePageChange}
-              onJumpToPageReady={handleJumpToPageReady}
-            />
-          </Root>
+        {/* PDF Viewer with Thumbnails and Zoom Controls */}
+        <div className="overflow-hidden flex flex-col">
+          {/* Zoom Controls Bar */}
+          <div className="flex items-center justify-between px-4 py-2 border-b bg-gray-50">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowThumbnails(!showThumbnails)}
+                className="px-3 py-1 text-sm border rounded hover:bg-gray-200"
+                title="Toggle thumbnails"
+              >
+                {showThumbnails ? '◀ Hide' : '▶ Show'} Thumbnails
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <ZoomOut className="cursor-pointer hover:bg-gray-200 p-1 rounded" />
+              <CurrentZoom className="text-sm font-mono" />
+              <ZoomIn className="cursor-pointer hover:bg-gray-200 p-1 rounded" />
+            </div>
+          </div>
+
+          {/* PDF Viewer Grid with Optional Thumbnails */}
+          <div className={`flex-1 grid ${showThumbnails ? 'grid-cols-[200px_1fr]' : 'grid-cols-[0_1fr]'} transition-all duration-300`}>
+            {/* Thumbnails Sidebar */}
+            {showThumbnails && (
+              <div className="border-r bg-gray-50 overflow-y-auto">
+                <Root source={pdfSource} className="w-full h-full">
+                  <Thumbnails className="p-2 space-y-2">
+                    <Thumbnail className="border rounded hover:border-blue-500 cursor-pointer" />
+                  </Thumbnails>
+                </Root>
+              </div>
+            )}
+
+            {/* Main PDF Viewer */}
+            <div className="overflow-hidden">
+              <Root source={pdfSource} className="w-full h-full" zoomOptions={{ minZoom: 0.5, maxZoom: 3 }}>
+                <PDFViewerContent
+                  highlights={highlights}
+                  onAddHighlight={addHighlight}
+                  searchTerm={searchTerm}
+                  onSearchResultsChange={setSearchResultCount}
+                  onUpdateSearchHighlights={handleSearchHighlights}
+                  onPageChange={handlePageChange}
+                  onJumpToPageReady={handleJumpToPageReady}
+                />
+              </Root>
+            </div>
+          </div>
         </div>
 
         {/* Right sidebar */}
