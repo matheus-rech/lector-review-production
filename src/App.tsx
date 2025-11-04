@@ -1422,7 +1422,7 @@ export default function App() {
       {/* Main content */}
       <main className="flex-1 grid grid-cols-[1fr_340px]">
         {/* PDF Viewer with Thumbnails and Zoom Controls */}
-        <div className="overflow-hidden flex flex-col">
+        <div className="flex flex-col h-full">
           {/* PDF Viewer Grid with Optional Thumbnails - SINGLE Root wrapping everything */}
           <Root
             source={pdfSource}
@@ -1474,7 +1474,7 @@ export default function App() {
             <div
               className={`flex-1 grid ${
                 showThumbnails ? "grid-cols-[200px_1fr]" : "grid-cols-1"
-              } transition-all duration-300 overflow-hidden`}
+              } transition-all duration-300`}
             >
               {/* Thumbnails Sidebar */}
               {showThumbnails && (
