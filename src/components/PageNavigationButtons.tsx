@@ -42,7 +42,7 @@ export const PageNavigationButtons = ({
   }, [currentPage, pages, onPageChange]);
 
   return (
-    <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10 flex items-center gap-3 bg-white/95 backdrop-blur-sm rounded-full shadow-lg px-4 py-2.5 border border-gray-200">
+    <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 flex items-center gap-3 bg-white/95 backdrop-blur-sm rounded-full shadow-lg px-4 py-2.5 border border-gray-200">
       {/* First Page Button */}
       <button
         onClick={handleFirstPage}
