@@ -4,9 +4,11 @@ import {
   CanvasLayer,
   CurrentZoom,
   CustomLayer,
+  HighlightLayer,
   Page,
   Pages,
   Root,
+  Search,
   // NEW: Selection tooltip
   SelectionTooltip,
   TextLayer,
@@ -27,7 +29,7 @@ import {
 import { GlobalWorkerOptions } from "pdfjs-dist";
 import "pdfjs-dist/web/pdf_viewer.css";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { PDFList, PDFUpload, PageNavigationButtons } from "./components";
+import { PDFList, PDFUpload, PageNavigationButtons, SearchUI } from "./components";
 import { ConfirmModal, InputModal } from "./components/Modal";
 import { SchemaForm } from "./components/SchemaForm";
 import { TemplateManager } from "./components/TemplateManager";
@@ -228,7 +230,6 @@ function PDFViewerContent({
   onAddHighlight,
   searchTerm,
   onSearchResultsChange,
-  onUpdateSearchHighlights,
   onPageChange,
   onJumpToPageReady,
   onSearchResultsData,
@@ -239,7 +240,6 @@ function PDFViewerContent({
   onAddHighlight: (rect: Rect, pageNumber: number, label: string) => void;
   searchTerm: string;
   onSearchResultsChange: (count: number) => void;
-  onUpdateSearchHighlights: (searchHighlights: LabeledHighlight[]) => void;
   onPageChange: (page: number, total: number) => void;
   onJumpToPageReady: (
     jumpFn: (page: number, options?: { behavior: "auto" }) => void
@@ -301,159 +301,58 @@ function PDFViewerContent({
     }
   }, [searchTerm, search, onSearchError]);
 
-  // Convert search results to highlights and update count using calculateHighlightRects
+  // Process search results and update count (HighlightLayer handles visual highlighting)
   useEffect(() => {
-    if (searchResults?.exactMatches && searchResults.exactMatches.length > 0) {
-      onSearchResultsChange(searchResults.exactMatches.length);
-      onSearchResultsData(
-        searchResults.exactMatches.map((match, idx) => ({
-          id: `search-${idx}-${Date.now()}`,
+    const hasExactMatches = searchResults?.exactMatches && searchResults.exactMatches.length > 0;
+    const hasFuzzyMatches = searchResults?.fuzzyMatches && searchResults.fuzzyMatches.length > 0;
+    
+    if (hasExactMatches || hasFuzzyMatches) {
+      // Combine exact and fuzzy matches for total count
+      const exactCount = searchResults.exactMatches?.length || 0;
+      const fuzzyCount = searchResults.fuzzyMatches?.length || 0;
+      const totalCount = exactCount + fuzzyCount;
+      
+      onSearchResultsChange(totalCount);
+      
+      // Combine all matches for results data
+      const allMatches = [
+        ...(searchResults.exactMatches || []).map((match, idx) => ({
+          id: `exact-${idx}-${Date.now()}`,
           pageNumber: match.pageNumber,
           text: match.text || "",
           matchIndex: match.matchIndex,
-        })) as SearchMatch[]
-      );
-
-      // Use calculateHighlightRects for accurate positioning
-      let cancelled = false;
-
-      const createSearchHighlights = async () => {
-        const searchHighlights: LabeledHighlight[] = [];
-
-        for (const [index, match] of searchResults.exactMatches.entries()) {
-          if (cancelled) break;
-
-          try {
-            // Get page proxy for accurate rect calculation
-            const pageProxy = getPdfPageProxy
-              ? getPdfPageProxy(match.pageNumber)
-              : null;
-
-            if (pageProxy) {
-              // Use calculateHighlightRects for accurate positioning
-              const rects = await calculateHighlightRects(pageProxy, {
-                pageNumber: match.pageNumber,
-                text: match.text,
-                matchIndex: match.matchIndex || 0,
-              });
-
-              // Convert accurate rects to our highlight format
-              rects.forEach(
-                (rect: {
-                  pageNumber: number;
-                  left: number;
-                  top: number;
-                  width: number;
-                  height: number;
-                }) => {
-                  searchHighlights.push({
-                    id: `search-${index}-${
-                      searchHighlights.length
-                    }-${Date.now()}`,
-                    label: `Search: "${searchTerm}"`,
-                    kind: "search" as const,
-                    pageNumber: rect.pageNumber,
-                    x: rect.left,
-                    y: rect.top,
-                    width: rect.width,
-                    height: rect.height,
-                  });
-                }
-              );
-            } else {
-              // Fallback to manual extraction if page proxy unavailable
-              const matchWithRects = match as unknown as SearchMatch & {
-                rects?: Array<{
-                  x: number;
-                  y: number;
-                  width: number;
-                  height: number;
-                }>;
-                rect?: { x: number; y: number; width: number; height: number };
-              };
-              const rect =
-                matchWithRects.rects && matchWithRects.rects[0]
-                  ? matchWithRects.rects[0]
-                  : matchWithRects.rect
-                  ? matchWithRects.rect
-                  : { x: 100, y: 100, width: 200, height: 20 };
-
-              searchHighlights.push({
-                id: `search-${index}-${Date.now()}`,
-                label: `Search: "${searchTerm}"`,
-                kind: "search" as const,
-                pageNumber: match.pageNumber || 1,
-                x: rect.x || 0,
-                y: rect.y || 0,
-                width: rect.width || 200,
-                height: rect.height || 20,
-              });
-            }
-          } catch (error) {
-            console.error(
-              "Failed to calculate highlight rects for match:",
-              error
-            );
-
-            // Notify parent of error
-            if (onSearchError && error instanceof Error) {
-              onSearchError(error);
-            }
-
-            // Fallback to manual extraction on error
-            const matchWithRects = match as unknown as SearchMatch & {
-              rects?: Array<{
-                x: number;
-                y: number;
-                width: number;
-                height: number;
-              }>;
-              rect?: { x: number; y: number; width: number; height: number };
-            };
-            const rect =
-              matchWithRects.rects && matchWithRects.rects[0]
-                ? matchWithRects.rects[0]
-                : matchWithRects.rect
-                ? matchWithRects.rect
-                : { x: 100, y: 100, width: 200, height: 20 };
-
-            searchHighlights.push({
-              id: `search-${index}-${Date.now()}`,
-              label: `Search: "${searchTerm}"`,
-              kind: "search" as const,
-              pageNumber: match.pageNumber || 1,
-              x: rect.x || 0,
-              y: rect.y || 0,
-              width: rect.width || 200,
-              height: rect.height || 20,
-            });
-          }
-        }
-
-        if (!cancelled) {
-          onUpdateSearchHighlights(searchHighlights);
-        }
-      };
-
-      createSearchHighlights();
-
-      // Cleanup function to prevent state updates after unmount
-      return () => {
-        cancelled = true;
-      };
+          type: 'exact' as const,
+        })),
+        ...(searchResults.fuzzyMatches || []).map((match, idx) => ({
+          id: `fuzzy-${idx}-${Date.now()}`,
+          pageNumber: match.pageNumber,
+          text: match.text || "",
+          matchIndex: match.matchIndex,
+          type: 'fuzzy' as const,
+        })),
+      ];
+      
+      onSearchResultsData(allMatches as SearchMatch[]);
     } else {
       onSearchResultsChange(0);
       onSearchResultsData([]);
     }
   }, [
     searchResults,
-    searchTerm,
-    getPdfPageProxy,
     onSearchResultsChange,
     onSearchResultsData,
-    onUpdateSearchHighlights,
-    onSearchError,
   ]);
+
+  // OLD CODE REMOVED - HighlightLayer now handles visual highlighting automatically
+  // The old async highlight creation code has been removed
+  // Search highlighting now works via jumpToHighlightRects() when clicking results
+
+  /*
+  // REMOVED: Old highlight creation code (lines 354-601)
+  // This entire async function has been removed because HighlightLayer
+  // now handles search highlighting automatically via jumpToHighlightRects()
+  */
+
 
   // Handle text selection - store pending selection
   useEffect(() => {
@@ -499,39 +398,53 @@ function PDFViewerContent({
   }, [pendingSelection, onAddHighlight, onRequestHighlightLabel]);
 
   return (
-    <div className="relative w-full h-full">
-      {/* Selection Tooltip with Highlight Button */}
-      <SelectionTooltip>
-        {pendingSelection && (
-          <div className="flex items-center gap-2">
-            <button
-              onClick={createHighlightFromSelection}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg shadow-lg hover:bg-green-700 transition-colors text-sm"
-            >
-              📝 Highlight Selected Text
-            </button>
-            <button
-              onClick={() => setPendingSelection(null)}
-              className="px-3 py-2 bg-gray-600 text-white rounded-lg shadow-lg hover:bg-gray-700 transition-colors text-sm"
-            >
-              ✕
-            </button>
-          </div>
-        )}
-      </SelectionTooltip>
-
-      <Pages className="p-6 max-w-4xl mx-auto dark:invert-[94%] dark:hue-rotate-180 dark:brightness-[80%] dark:contrast-[228%]">
+    <div className="relative w-full max-w-full h-full overflow-hidden flex items-center justify-center">
+      <Pages className="p-4 w-full max-w-full dark:invert-[94%] dark:hue-rotate-180 dark:brightness-[80%] dark:contrast-[228%]" style={{ transform: 'scale(0.85)', transformOrigin: 'center center' }}>
         <Page>
           <CanvasLayer />
           <TextLayer />
+          {/* Selection Tooltip with Highlight Button */}
+          {selectionDimensions && (
+            <SelectionTooltip>
+              <button
+                onClick={createHighlightFromSelection}
+                className="bg-white shadow-lg rounded-md px-3 py-1 hover:bg-yellow-200/70"
+              >
+                Highlight
+              </button>
+            </SelectionTooltip>
+          )}
           <AnnotationLayer />
+          <HighlightLayer className="bg-yellow-300/40" />
           <CustomLayer>
             {(pageNumber) => {
               const pageHighlights = highlights.filter(
                 (h) => h.pageNumber === pageNumber
               );
+              console.log(`[CustomLayer] Page ${pageNumber}: ${pageHighlights.length} highlights`);
+              console.log(`[CustomLayer] Total highlights available:`, highlights.length);
+              console.log(`[CustomLayer] Search highlights:`, highlights.filter(h => h.kind === 'search').length);
+              
+              // Add a test highlight to verify CustomLayer is rendering
+              const testHighlight = pageNumber === 1 ? (
+                <div
+                  key="test-highlight"
+                  className="absolute pointer-events-none"
+                  style={{
+                    left: '100px',
+                    top: '100px',
+                    width: '200px',
+                    height: '30px',
+                    backgroundColor: 'rgba(255, 0, 0, 0.5)',
+                    border: '2px solid red',
+                    zIndex: 9999,
+                  }}
+                />
+              ) : null;
+              
               return (
-                <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 100 }}>
+                  {testHighlight}
                   {pageHighlights.map((h) => (
                     <div
                       key={h.id}
@@ -749,6 +662,8 @@ export default function App() {
 
   // UI state for new Lector features
   const [showThumbnails, setShowThumbnails] = useState(true);
+  const [showSchemaForm, setShowSchemaForm] = useState(true);
+  const [showSearchUI, setShowSearchUI] = useState(true);
 
   // Parse schema on mount
   useEffect(() => {
@@ -1159,16 +1074,7 @@ export default function App() {
     success("Data exported as CSV");
   };
 
-  /** Handle search highlights from PDFViewerContent */
-  const handleSearchHighlights = useCallback(
-    (searchHighlights: LabeledHighlight[]) => {
-      setHighlights((prev) => {
-        const userHighlights = prev.filter((h) => h.kind !== "search");
-        return [...userHighlights, ...searchHighlights];
-      });
-    },
-    []
-  );
+  // REMOVED: handleSearchHighlights callback - no longer needed with HighlightLayer
 
   /** Handle search results data */
   const handleSearchResultsData = useCallback((results: SearchMatch[]) => {
@@ -1178,14 +1084,43 @@ export default function App() {
 
   /** Navigate to specific search result */
   const jumpToSearchResult = useCallback(
-    (index: number) => {
-      if (searchResultsData[index] && jumpToPageFn.current) {
+    async (index: number) => {
+      console.log('[jumpToSearchResult] Called with index:', index);
+      if (searchResultsData[index]) {
         const result = searchResultsData[index];
-        jumpToPageFn.current(result.pageNumber);
-        setCurrentSearchIndex(index);
+        console.log('[jumpToSearchResult] Result:', result);
+        const { jumpToHighlightRects } = usePdfJump.getState();
+        const getPdfPageProxy = usePdf.getState().getPdfPageProxy;
+        console.log('[jumpToSearchResult] jumpToHighlightRects type:', typeof jumpToHighlightRects);
+        
+        try {
+          const pageProxy = getPdfPageProxy(result.pageNumber);
+          const rects = await calculateHighlightRects(pageProxy, {
+            pageNumber: result.pageNumber,
+            text: result.text,
+            matchIndex: result.matchIndex,
+            searchText: searchTerm, // Pass searchText for exact term highlighting
+          });
+          
+          console.log('[jumpToSearchResult] Rects:', rects, 'Length:', rects?.length);
+          
+          if (rects && rects.length > 0) {
+            console.log('[jumpToSearchResult] Calling jumpToHighlightRects');
+            jumpToHighlightRects(rects, "pixels");
+            console.log('[jumpToSearchResult] jumpToHighlightRects called');
+            setCurrentSearchIndex(index);
+          }
+        } catch (error) {
+          console.error('[jumpToSearchResult] Error:', error);
+          // Fallback to page jump if highlighting fails
+          if (jumpToPageFn.current) {
+            jumpToPageFn.current(result.pageNumber);
+            setCurrentSearchIndex(index);
+          }
+        }
       }
     },
-    [searchResultsData]
+    [searchResultsData, searchTerm]
   );
 
   /** Navigate to next search result */
@@ -1316,90 +1251,6 @@ export default function App() {
           </span>
         </div>
 
-        {/* Enhanced Search */}
-        <div className="space-y-2">
-          <label className="text-xs font-semibold">Search</label>
-          <input
-            className="w-full border p-1 rounded text-sm"
-            placeholder="Search in PDF..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            aria-label="Search in PDF"
-            role="searchbox"
-            aria-describedby="search-description"
-          />
-          <span id="search-description" className="sr-only">
-            Search for text within the PDF document
-          </span>
-
-          {searchResultCount > 0 && (
-            <>
-              {/* Navigation Controls */}
-              <div className="flex items-center justify-between gap-2">
-                <div className="text-xs text-gray-600">
-                  Match {currentSearchIndex + 1} of {searchResultCount}
-                </div>
-                <div className="flex gap-1">
-                  <button
-                    onClick={prevSearchResult}
-                    className="px-2 py-1 text-xs border rounded hover:bg-gray-100"
-                    title="Previous match"
-                    aria-label="Previous search result"
-                  >
-                    ◀
-                  </button>
-                  <button
-                    onClick={nextSearchResult}
-                    className="px-2 py-1 text-xs border rounded hover:bg-gray-100"
-                    title="Next match"
-                    aria-label="Next search result"
-                  >
-                    ▶
-                  </button>
-                </div>
-              </div>
-
-              {/* Results List */}
-              <div className="max-h-40 overflow-y-auto border rounded text-xs bg-white">
-                {searchResultsData
-                  .slice(0, 10)
-                  .map((result: SearchMatch, index: number) => (
-                    <div
-                      key={index}
-                      onClick={() => jumpToSearchResult(index)}
-                      className={`p-2 cursor-pointer hover:bg-blue-50 border-b last:border-b-0 ${
-                        index === currentSearchIndex ? "bg-blue-100" : ""
-                      }`}
-                      role="button"
-                      tabIndex={0}
-                      aria-label={`Go to search result ${index + 1} on page ${
-                        result.pageNumber
-                      }`}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          jumpToSearchResult(index);
-                        }
-                      }}
-                    >
-                      <div className="font-medium text-blue-700">
-                        Page {result.pageNumber}
-                      </div>
-                      <div className="text-gray-600 truncate">
-                        {result.text?.substring(0, 60) || "Match found"}...
-                      </div>
-                    </div>
-                  ))}
-                {searchResultsData.length > 10 && (
-                  <div className="p-2 text-center text-gray-500 italic">
-                    Showing first 10 of {searchResultCount} results
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-        </div>
-
         {/* Export */}
         <div className="space-x-2">
           <button
@@ -1420,14 +1271,14 @@ export default function App() {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 grid grid-cols-[1fr_340px]">
+      <main className={`flex-1 grid ${showSchemaForm ? 'grid-cols-[1fr_340px]' : 'grid-cols-1'} overflow-hidden`}>
         {/* PDF Viewer with Thumbnails and Zoom Controls */}
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full overflow-hidden">
           {/* PDF Viewer Grid with Optional Thumbnails - SINGLE Root wrapping everything */}
           <Root
             source={pdfSource}
             className="flex-1 flex flex-col"
-            zoomOptions={{ minZoom: 0.5, maxZoom: 3 }}
+            zoomOptions={{ minZoom: 0.5, maxZoom: 3, initialZoom: 0.7 }}
             loader={
               <div className="flex items-center justify-center h-full">
                 <div className="text-center">
@@ -1446,9 +1297,21 @@ export default function App() {
               info("PDF loaded successfully");
             }}
           >
-            {/* Zoom Controls Bar - NOW INSIDE ROOT */}
+            {/* Zoom Controls Bar */}
             <div className="flex items-center justify-between px-4 py-2 border-b bg-gray-50">
               <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowSearchUI(!showSearchUI)}
+                  className="px-3 py-1 text-sm border rounded hover:bg-gray-200"
+                  title="Toggle search"
+                  aria-label={
+                    showSearchUI ? "Hide search" : "Show search"
+                  }
+                  aria-expanded={showSearchUI ? "true" : "false"}
+                >
+                  {showSearchUI ? "◀ Hide" : "▶ Show"} Search
+                </button>
                 <button
                   type="button"
                   onClick={() => setShowThumbnails(!showThumbnails)}
@@ -1461,6 +1324,18 @@ export default function App() {
                 >
                   {showThumbnails ? "◀ Hide" : "▶ Show"} Thumbnails
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setShowSchemaForm(!showSchemaForm)}
+                  className="px-3 py-1 text-sm border rounded hover:bg-gray-200"
+                  title="Toggle schema form"
+                  aria-label={
+                    showSchemaForm ? "Hide schema form" : "Show schema form"
+                  }
+                  aria-expanded={showSchemaForm ? "true" : "false"}
+                >
+                  {showSchemaForm ? "◀ Hide" : "▶ Show"} Form
+                </button>
               </div>
 
               <div className="flex items-center gap-2">
@@ -1470,29 +1345,33 @@ export default function App() {
               </div>
             </div>
 
-            {/* PDF Content Grid */}
-            <div
-              className={`flex-1 grid ${
-                showThumbnails ? "grid-cols-[200px_1fr]" : "grid-cols-1"
-              } transition-all duration-300`}
-            >
+            {/* PDF Content Grid - Search and Pages as siblings */}
+            <div className="flex-1 flex min-h-0 relative">
+              {/* Search Sidebar */}
+              {showSearchUI && (
+                <Search>
+                  <div className="w-80 border-r bg-white overflow-y-auto flex-shrink-0">
+                    <SearchUI />
+                  </div>
+                </Search>
+              )}
+
               {/* Thumbnails Sidebar */}
               {showThumbnails && (
-                <div className="border-r bg-gray-50 overflow-y-auto h-full">
-                  <Thumbnails className="p-2 space-y-2">
-                    <Thumbnail className="border rounded hover:border-blue-500 cursor-pointer" />
+                <div className="overflow-y-auto overflow-x-hidden h-full w-96 border-r">
+                  <Thumbnails className="flex flex-col gap-4 items-center py-4">
+                    <Thumbnail className="transition-all w-48 hover:shadow-lg hover:outline hover:outline-gray-300" />
                   </Thumbnails>
                 </div>
               )}
 
-              {/* Main PDF Viewer */}
-              <div className="overflow-y-auto h-full">
+              {/* Main PDF Viewer - Pages component */}
+              <div className="flex-1 overflow-y-auto">
                 <PDFViewerContent
                   highlights={highlights}
                   onAddHighlight={addHighlight}
                   searchTerm={searchTerm}
                   onSearchResultsChange={setSearchResultCount}
-                  onUpdateSearchHighlights={handleSearchHighlights}
                   onPageChange={handlePageChange}
                   onJumpToPageReady={handleJumpToPageReady}
                   onSearchResultsData={handleSearchResultsData}
@@ -1508,6 +1387,7 @@ export default function App() {
         </div>
 
         {/* Right sidebar */}
+        {showSchemaForm && (
         <aside className="border-l p-3 space-y-4 bg-white overflow-y-auto">
           {/* Form Type Toggle */}
           <div className="flex items-center gap-2">
@@ -1707,6 +1587,7 @@ export default function App() {
             </ul>
           </div>
         </aside>
+        )}
       </main>
 
       {/* Template Manager Modal */}

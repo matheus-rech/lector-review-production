@@ -38,3 +38,6 @@ export type { SchemaFormProps } from "./SchemaForm";
 export { ErrorBoundary } from "./ErrorBoundary";
 // Page Navigation
 export { PageNavigationButtons } from "./PageNavigationButtons";
+
+// Search Components
+export { SearchUI } from "./SearchUI";
