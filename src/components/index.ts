@@ -6,7 +6,7 @@
  */
 
 // Modal and Dialog Components
-export { Modal } from './Modal';
+export { Modal, InputModal, ConfirmModal } from './Modal';
 export type { ModalProps } from './Modal';
 
 // Notification Components
