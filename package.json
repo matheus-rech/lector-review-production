@@ -1,12 +1,26 @@
 {
   "name": "lector-review",
   "private": true,
-  "version": "0.0.1",
+  "version": "1.0.0",
+  "description": "Professional PDF review application with search, highlighting, and form filling capabilities",
+  "author": "Matheus Rech",
+  "homepage": "https://github.com/matheus-rech/lector-review-production",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/matheus-rech/lector-review-production.git"
+  },
   "type": "module",
+  "main": "electron/main.js",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "electron": "wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .",
+    "electron:dev": "concurrently \"npm run dev\" \"npm run electron\"",
+    "electron:build": "npm run build && electron-builder",
+    "electron:build:win": "npm run build && electron-builder --win",
+    "electron:build:mac": "npm run build && electron-builder --mac",
+    "electron:build:linux": "npm run build && electron-builder --linux",
     "test": "vitest",
     "test:watch": "vitest --watch",
     "test:ui": "vitest --ui",
@@ -18,7 +32,7 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,json,css,md}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,json,css,md}\"",
     "cursor:setup": "echo '✅ Cursor setup complete! Open .cursorrules to see AI instructions.'",
-    "clean": "rm -rf node_modules dist .turbo"
+    "clean": "rm -rf node_modules dist .turbo release"
   },
   "dependencies": {
     "@anaralabs/lector": "3.7.2",
@@ -37,6 +51,10 @@
     "@vitejs/plugin-react": "^4.3.1",
     "@vitest/ui": "^1.0.4",
     "autoprefixer": "^10.4.20",
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
+    "electron": "^39.0.0",
+    "electron-builder": "^26.0.12",
     "eslint": "^8.55.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
@@ -48,6 +66,43 @@
     "tailwindcss": "^3.4.13",
     "typescript": "^5.6.3",
     "vite": "^5.4.8",
-    "vitest": "^1.0.4"
+    "vitest": "^1.0.4",
+    "wait-on": "^9.0.1"
+  },
+  "build": {
+    "appId": "com.lector.review",
+    "productName": "Lector Review",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "extraMetadata": {
+      "main": "electron/main.js"
+    },
+    "win": {
+      "target": [{"target": "nsis", "arch": ["x64"]}],
+      "icon": "build/icon.png"
+    },
+    "mac": {
+      "target": [{"target": "dmg", "arch": ["x64", "arm64"]}],
+      "icon": "build/icon.png",
+      "category": "public.app-category.productivity"
+    },
+    "linux": {
+      "target": [{"target": "AppImage", "arch": ["x64"]}],
+      "icon": "build/icon.png",
+      "category": "Office"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
   }
 }

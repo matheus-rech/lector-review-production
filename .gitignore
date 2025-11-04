@@ -71,3 +71,7 @@ test_*.sh
 !src/**/*.png
 !src/**/*.jpg
 !src/**/*.jpeg
+
+# Electron build outputs
+release/
+build.log
