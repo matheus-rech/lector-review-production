@@ -483,39 +483,5 @@ export interface SearchResults {
 
 // ==================== EXPORTS ====================
 
-// Export all types as a namespace as well
-export namespace Types {
-  export type {
-    Rect,
-    Point,
-    LabeledHighlight,
-    PendingSelection,
-    FieldTemplate,
-    PageTemplates,
-    PageFormData,
-    Project,
-    ProjectData,
-    PDFMetadata,
-    PDFStorageEntry,
-    SourcedValue,
-    SchemaField,
-    ParsedSchema,
-    Toast,
-    ToastType,
-    ModalConfig,
-    LoadingState,
-    KeyboardShortcut,
-    CSVRow,
-    ExportOptions,
-    ValidationResult,
-    FieldValidator,
-    AsyncState,
-    Pagination,
-    SortConfig,
-    HistoryState,
-    HistoryAction,
-    ColoredHighlight,
-    SearchMatch,
-    SearchResults,
-  };
-}
+// All types are exported individually above for direct imports
+// Example: import { LabeledHighlight, FieldTemplate } from '@/types';

@@ -21,7 +21,7 @@
     "clean": "rm -rf node_modules dist .turbo"
   },
   "dependencies": {
-    "@anaralabs/lector": "^3.7.2",
+    "@anaralabs/lector": "3.7.2",
     "pdfjs-dist": "^4.6.82",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"

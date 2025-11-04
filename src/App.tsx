@@ -2,7 +2,6 @@ import {
   // NEW: Utilities
   calculateHighlightRects,
   CanvasLayer,
-  ColoredHighlightLayer,
   CurrentZoom,
   Page,
   Pages,
@@ -21,7 +20,6 @@ import {
   // NEW: Zoom controls
   ZoomIn,
   ZoomOut,
-  type ColoredHighlight,
 } from "@anaralabs/lector";
 import { GlobalWorkerOptions } from "pdfjs-dist";
 import "pdfjs-dist/web/pdf_viewer.css";
@@ -175,9 +173,9 @@ function PDFViewerContent({
   const selectionDimensions = useSelectionDimensions();
   const { jumpToPage } = usePdfJump();
   const currentPageNumber = usePDFPageNumber();
-  const pdf = usePdf();
-  // Access getPdfPageProxy safely through the pdf object
-  const totalPages = pdf?.numPages || 0;
+  const pdfDocumentProxy = usePdf((state) => state.pdfDocumentProxy);
+  const getPdfPageProxy = usePdf((state) => state.getPdfPageProxy);
+  const totalPages = pdfDocumentProxy?.numPages || 0;
   const { searchResults, search } = useSearch();
 
   // Track if we've already set up jumpToPage
@@ -212,7 +210,7 @@ function PDFViewerContent({
   useEffect(() => {
     if (searchResults?.exactMatches && searchResults.exactMatches.length > 0) {
       onSearchResultsChange(searchResults.exactMatches.length);
-      onSearchResultsData(searchResults.exactMatches);
+      onSearchResultsData(searchResults.exactMatches as any);
 
       // Use calculateHighlightRects for accurate positioning
       let cancelled = false;
@@ -225,7 +223,9 @@ function PDFViewerContent({
 
           try {
             // Get page proxy for accurate rect calculation
-            const pageProxy = pdf ? await pdf.getPage(match.pageNumber) : null;
+            const pageProxy = getPdfPageProxy
+              ? getPdfPageProxy(match.pageNumber)
+              : null;
 
             if (pageProxy) {
               // Use calculateHighlightRects for accurate positioning
@@ -260,11 +260,12 @@ function PDFViewerContent({
               );
             } else {
               // Fallback to manual extraction if page proxy unavailable
+              const matchAny = match as any;
               const rect =
-                match.rects && match.rects[0]
-                  ? match.rects[0]
-                  : match.rect
-                  ? match.rect
+                matchAny.rects && matchAny.rects[0]
+                  ? matchAny.rects[0]
+                  : matchAny.rect
+                  ? matchAny.rect
                   : { x: 100, y: 100, width: 200, height: 20 };
 
               searchHighlights.push({
@@ -285,11 +286,12 @@ function PDFViewerContent({
             );
 
             // Fallback to manual extraction on error
+            const matchAny = match as any;
             const rect =
-              match.rects && match.rects[0]
-                ? match.rects[0]
-                : match.rect
-                ? match.rect
+              matchAny.rects && matchAny.rects[0]
+                ? matchAny.rects[0]
+                : matchAny.rect
+                ? matchAny.rect
                 : { x: 100, y: 100, width: 200, height: 20 };
 
             searchHighlights.push({
@@ -323,7 +325,7 @@ function PDFViewerContent({
   }, [
     searchResults,
     searchTerm,
-    pdf,
+    getPdfPageProxy,
     onSearchResultsChange,
     onSearchResultsData,
     onUpdateSearchHighlights,
@@ -331,15 +333,12 @@ function PDFViewerContent({
 
   // Handle text selection - store pending selection
   useEffect(() => {
-    if (
-      selectionDimensions &&
-      selectionDimensions.rects &&
-      selectionDimensions.rects.length > 0
-    ) {
+    const dimension = selectionDimensions.getDimension();
+    if (dimension && dimension.highlights && dimension.highlights.length > 0) {
       setPendingSelection({
-        rects: selectionDimensions.rects,
+        rects: dimension.highlights,
         pageNumber: currentPageNumber || 1,
-        text: selectionDimensions.text || "",
+        text: dimension.text || "",
       });
     }
   }, [selectionDimensions, currentPageNumber]);
@@ -361,21 +360,33 @@ function PDFViewerContent({
     }
   }, [pendingSelection, onAddHighlight, onRequestHighlightLabel]);
 
-  // Convert our highlights to ColoredHighlight format
-  const coloredHighlights: ColoredHighlight[] = highlights.map((h) => ({
-    id: h.id,
-    pageNumber: h.pageNumber,
-    rects: [
-      {
-        x: h.x,
-        y: h.y,
-        width: h.width,
-        height: h.height,
-      },
-    ],
-    color:
-      h.kind === "search" ? "rgba(255, 255, 0, 0.4)" : "rgba(0, 255, 0, 0.3)",
-  }));
+  // Custom highlight layer component
+  const CustomHighlightLayer = ({ pageNumber }: { pageNumber: number }) => {
+    const pageHighlights = highlights.filter(
+      (h) => h.pageNumber === pageNumber
+    );
+
+    return (
+      <div className="absolute inset-0 pointer-events-none">
+        {pageHighlights.map((h) => (
+          <div
+            key={h.id}
+            className="absolute pointer-events-none"
+            style={{
+              left: `${h.x}px`,
+              top: `${h.y}px`,
+              width: `${h.width}px`,
+              height: `${h.height}px`,
+              backgroundColor:
+                h.kind === "search"
+                  ? "rgba(255, 255, 0, 0.4)"
+                  : "rgba(0, 255, 0, 0.3)",
+            }}
+          />
+        ))}
+      </div>
+    );
+  };
 
   return (
     <div className="relative w-full h-full">
@@ -400,22 +411,24 @@ function PDFViewerContent({
       </SelectionTooltip>
 
       <Pages className="p-6">
-        {totalPages > 0 ? (
-          Array.from({ length: totalPages }, (_, index) => (
-            <Page key={index + 1}>
+        <>
+          {totalPages > 0 ? (
+            Array.from({ length: totalPages }, (_, index) => (
+              <Page key={index + 1}>
+                <CanvasLayer />
+                <TextLayer />
+                <CustomHighlightLayer pageNumber={index + 1} />
+              </Page>
+            ))
+          ) : (
+            // Render single page initially to allow PDF to load
+            <Page key={1}>
               <CanvasLayer />
               <TextLayer />
-              <ColoredHighlightLayer highlights={coloredHighlights} />
+              <CustomHighlightLayer pageNumber={1} />
             </Page>
-          ))
-        ) : (
-          // Render single page initially to allow PDF to load
-          <Page>
-            <CanvasLayer />
-            <TextLayer />
-            <ColoredHighlightLayer highlights={coloredHighlights} />
-          </Page>
-        )}
+          )}
+        </>
       </Pages>
     </div>
   );
@@ -983,6 +996,7 @@ export default function App() {
               className="flex-1 border p-1 rounded text-sm"
               value={currentProject}
               onChange={(e) => switchProject(e.target.value)}
+              aria-label="Select project"
             >
               {projects.map((p) => (
                 <option key={p} value={p}>

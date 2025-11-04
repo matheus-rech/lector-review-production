@@ -1,0 +1,303 @@
+import { ComponentPropsWithoutRef } from 'react';
+import { Context } from 'react';
+import type { DocumentInitParameters } from 'pdfjs-dist/types/src/display/api';
+import { ForwardRefExoticComponent } from 'react';
+import { FunctionComponent } from 'react';
+import { HTMLProps } from 'react';
+import type { IPDFLinkService } from 'pdfjs-dist/types/web/interfaces';
+import { JSX } from 'react/jsx-runtime';
+import type { JSX as JSX_2 } from 'react';
+import type { PageViewport } from 'pdfjs-dist';
+import { PDFDocumentProxy } from 'pdfjs-dist';
+import type { PDFPageProxy } from 'pdfjs-dist';
+import { default as React_2 } from 'react';
+import { ReactElement } from 'react';
+import { ReactNode } from 'react';
+import { RefAttributes } from 'react';
+import { StoreApi } from 'zustand';
+import type { TypedArray } from 'pdfjs-dist/types/src/display/api';
+import { Virtualizer } from '@tanstack/react-virtual';
+
+export declare const AnnotationLayer: ({ renderForms, className, style, ...props }: AnnotationLayerParams & HTMLProps<HTMLDivElement>) => JSX.Element;
+
+declare interface AnnotationLayerParams {
+    /**
+     * Whether to render forms.
+     */
+    renderForms?: boolean;
+}
+
+export declare function calculateHighlightRects(pageProxy: PDFPageProxy, textMatch: TextPosition): Promise<HighlightRect[]>;
+
+export declare const cancellable: <T extends Promise<unknown>>(promise: T) => {
+    promise: T;
+    cancel: () => void;
+};
+
+export declare const CanvasLayer: ({ style, ...props }: HTMLProps<HTMLCanvasElement>) => JSX.Element;
+
+export declare const clamp: (value: number, min: number, max: number) => number;
+
+export declare const CurrentPage: ({ ...props }: HTMLProps<HTMLInputElement>) => JSX.Element;
+
+export declare const CurrentZoom: ({ ...props }: HTMLProps<HTMLInputElement>) => JSX.Element;
+
+export declare const CustomLayer: ({ children, }: {
+    children: (pageNumber: number) => JSX_2.Element;
+}) => JSX_2.Element;
+
+export declare const firstMemo: <T>(first: boolean, memo: unknown, initializer: () => T) => T;
+
+export declare const getFitWidthZoom: (containerWidth: number, viewports: PageViewport[], zoomOptions: {
+    minZoom: number;
+    maxZoom: number;
+}) => number;
+
+export declare const HighlightLayer: ForwardRefExoticComponent<HighlightLayerProps & RefAttributes<HTMLDivElement>>;
+
+declare interface HighlightLayerProps extends ComponentPropsWithoutRef<"div"> {
+    asChild?: boolean;
+}
+
+declare type HighlightRect = {
+    pageNumber: number;
+    top: number;
+    left: number;
+    height: number;
+    width: number;
+    type?: "pixels" | "percent";
+};
+export { HighlightRect }
+export { HighlightRect as HighlightRect_alias_1 }
+
+export declare interface InitialPDFState {
+    pdfDocumentProxy: PDFDocumentProxy;
+    pageProxies: PDFPageProxy[];
+    viewports: Array<PageViewport>;
+    zoom: number;
+    isZoomFitWidth?: boolean;
+    zoomOptions?: ZoomOptions;
+}
+
+export declare class LinkService implements IPDFLinkService {
+    _pdfDocumentProxy?: PDFDocumentProxy;
+    externalLinkEnabled: boolean;
+    isInPresentationMode: boolean;
+    get pdfDocumentProxy(): PDFDocumentProxy;
+    constructor();
+    get pagesCount(): number;
+    getDestinationHash(dest: unknown[]): string;
+    getAnchorUrl(): string;
+    addLinkAttributes(link: HTMLAnchorElement, url: string, newWindow?: boolean | undefined): void;
+    goToDestination(dest: string | unknown[] | Promise<unknown[]>): Promise<void>;
+}
+
+export declare const NextPage: () => void;
+
+export declare const Outline: ({ children, ...props }: HTMLProps<HTMLUListElement> & {
+    children: ReactElement<typeof OutlineItem>;
+}) => JSX.Element;
+
+export declare const OutlineChildItems: ({ ...props }: HTMLProps<HTMLUListElement> & {
+    children?: ReactElement<typeof OutlineItem>[];
+}) => JSX.Element;
+
+export declare const OutlineItem: FunctionComponent<OutlineItemProps>;
+
+declare interface OutlineItemProps extends HTMLProps<HTMLDivElement> {
+    level?: number;
+    item?: OutlineItemType;
+    children?: ReactElement<typeof OutlineChildItems>;
+    outlineItem?: ReactElement<typeof OutlineItem>;
+}
+
+declare type OutlineItemType = NonNullable<ReturnType<typeof usePDFOutline>>[number];
+
+export declare const Page: ({ children, pageNumber, style, ...props }: HTMLProps<HTMLDivElement> & {
+    children: ReactNode;
+    pageNumber?: number;
+}) => JSX.Element;
+
+export declare const Pages: ({ children, gap, virtualizerOptions, initialOffset, onOffsetChange, ...props }: HTMLProps<HTMLDivElement> & {
+    virtualizerOptions?: {
+        overscan?: number;
+    };
+    gap?: number;
+    children: ReactElement;
+    initialOffset?: number;
+    onOffsetChange?: (offset: number) => void;
+}) => JSX.Element;
+
+declare interface PDFState {
+    pdfDocumentProxy: PDFDocumentProxy;
+    zoom: number;
+    updateZoom: (zoom: number | ((prevZoom: number) => number), isZoomFitWidth?: boolean) => void;
+    isZoomFitWidth: boolean;
+    zoomFitWidth: () => void;
+    isPinching: boolean;
+    setIsPinching: (isPinching: boolean) => void;
+    currentPage: number;
+    setCurrentPage: (pageNumber: number) => void;
+    viewports: Array<PageViewport>;
+    viewportRef: React.MutableRefObject<HTMLDivElement | null>;
+    pageProxies: PDFPageProxy[];
+    textContent: TextContent[];
+    setTextContent: (textContents: TextContent[]) => void;
+    zoomOptions: Required<ZoomOptions>;
+    virtualizer: PDFVirtualizer | null;
+    setVirtualizer: (virtualizer: PDFVirtualizer) => void;
+    highlights: HighlightRect[];
+    setHighlight: (higlights: HighlightRect[]) => void;
+    getPdfPageProxy: (pageNumber: number) => PDFPageProxy;
+    customSelectionRects: HighlightRect[];
+    setCustomSelectionRects: (rects: HighlightRect[]) => void;
+}
+
+export declare const PDFStore: {
+    useContext: () => StoreApi<PDFState>;
+    Context: Context<StoreApi<PDFState>>;
+    Provider: (props: {
+        children?: React.ReactNode;
+        initialValue: InitialPDFState;
+    }) => JSX.Element;
+};
+
+export declare type PDFVirtualizer = Virtualizer<any, any>;
+
+export declare const PreviousPage: () => void;
+
+export declare const Root: ForwardRefExoticComponent<Omit<HTMLProps<HTMLDivElement> & usePDFDocumentParams & {
+loader?: ReactNode;
+}, "ref"> & RefAttributes<unknown>>;
+
+export declare const Search: ({ children, loading }: SearchProps) => ReactNode;
+
+declare interface SearchOptions {
+    threshold?: number;
+    limit?: number;
+    textSize?: number;
+}
+
+declare interface SearchProps {
+    children: React.ReactNode;
+    loading?: React.ReactNode;
+}
+
+export declare interface SearchResult {
+    pageNumber: number;
+    text: string;
+    score: number;
+    matchIndex: number;
+    isExactMatch: boolean;
+}
+
+export declare interface SearchResults {
+    exactMatches: SearchResult[];
+    fuzzyMatches: SearchResult[];
+    hasMoreResults: boolean;
+}
+
+export declare const SelectionTooltip: ({ children }: SelectionTooltipProps) => JSX.Element;
+
+declare interface SelectionTooltipProps {
+    children: React_2.ReactNode;
+}
+
+export declare type Source = string | URL | TypedArray | ArrayBuffer | DocumentInitParameters;
+
+declare type TextContent = {
+    pageNumber: number;
+    text: string;
+};
+
+export declare const TextLayer: ({ className, style, ...props }: HTMLProps<HTMLDivElement>) => JSX.Element;
+
+declare interface TextPosition {
+    pageNumber: number;
+    text: string;
+    matchIndex: number;
+}
+
+export declare const Thumbnail: ({ pageNumber, ...props }: HTMLProps<HTMLCanvasElement> & {
+    pageNumber?: number;
+}) => JSX.Element;
+
+export declare const Thumbnails: ({ children, ...props }: HTMLProps<HTMLDivElement> & {
+    children: ReactElement<typeof Thumbnail>;
+}) => JSX.Element;
+
+export declare const TotalPages: ({ ...props }: HTMLProps<HTMLDivElement>) => JSX.Element;
+
+declare const usePdf: <T>(selector: (state: PDFState) => T) => T;
+export { usePdf }
+export { usePdf as usePdf_alias_1 }
+
+export declare const usePDFDocumentContext: ({ onDocumentLoad, source, initialRotation, isZoomFitWidth, zoom, zoomOptions, }: usePDFDocumentParams) => {
+    initialState: InitialPDFState | null | undefined;
+};
+
+export declare interface usePDFDocumentParams {
+    /**
+     * The URL of the PDF file to load.
+     */
+    source: Source;
+    onDocumentLoad?: ({ proxy, source, }: {
+        proxy: PDFDocumentProxy;
+        source: Source;
+    }) => void;
+    initialRotation?: number;
+    isZoomFitWidth?: boolean;
+    zoom?: number;
+    zoomOptions?: ZoomOptions;
+}
+
+export declare const usePdfJump: () => {
+    jumpToPage: (pageIndex: number, options?: {
+        align?: "start" | "center" | "end" | "auto";
+        behavior?: "auto" | "smooth";
+    }) => void;
+    jumpToOffset: (offset: number) => void;
+    jumpToHighlightRects: (rects: HighlightRect[], type: "pixels" | "percent", align?: "start" | "center", additionalOffset?: number) => void;
+};
+
+declare const usePDFOutline: () => {
+    title: string;
+    bold: boolean;
+    italic: boolean;
+    color: Uint8ClampedArray;
+    dest: string | Array<any> | null;
+    url: string | null;
+    unsafeUrl: string | undefined;
+    newWindow: boolean | undefined;
+    count: number | undefined;
+    items: Array<any>;
+}[] | undefined;
+
+export declare const useSearch: () => {
+    textContent: {
+        pageNumber: number;
+        text: string;
+    }[];
+    keywords: string[];
+    searchResults: SearchResults;
+    search: (searchText: string, options?: SearchOptions) => SearchResults;
+};
+
+export declare const useSelectionDimensions: () => {
+    getDimension: () => {
+        highlights: HighlightRect[];
+        text: string;
+        isCollapsed: boolean;
+    } | undefined;
+};
+
+export declare const ZoomIn: ({ ...props }: HTMLProps<HTMLButtonElement>) => JSX.Element;
+
+export declare interface ZoomOptions {
+    minZoom?: number;
+    maxZoom?: number;
+}
+
+export declare const ZoomOut: ({ ...props }: HTMLProps<HTMLButtonElement>) => JSX.Element;
+
+export { }
