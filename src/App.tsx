@@ -1,6 +1,5 @@
 import {
   // NEW: Utilities
-  calculateHighlightRects,
   CanvasLayer,
   CurrentZoom,
   CustomLayer,
@@ -228,17 +227,14 @@ const setValueAtPath = (
 function PDFViewerContent({
   highlights,
   onAddHighlight,
-  searchTerm,
   onSearchResultsChange,
   onPageChange,
   onJumpToPageReady,
   onSearchResultsData,
   onRequestHighlightLabel,
-  onSearchError,
 }: {
   highlights: LabeledHighlight[];
   onAddHighlight: (rect: Rect, pageNumber: number, label: string) => void;
-  searchTerm: string;
   onSearchResultsChange: (count: number) => void;
   onPageChange: (page: number, total: number) => void;
   onJumpToPageReady: (
@@ -251,16 +247,14 @@ function PDFViewerContent({
     defaultLabel: string,
     onConfirm: (label: string) => void
   ) => void;
-  onSearchError?: (error: Error) => void;
 }) {
   // Use Lector hooks
   const selectionDimensions = useSelectionDimensions();
   const { jumpToPage } = usePdfJump();
   const currentPageNumber = usePDFPageNumber();
   const pdfDocumentProxy = usePdf((state) => state.pdfDocumentProxy);
-  const getPdfPageProxy = usePdf((state) => state.getPdfPageProxy);
   const totalPages = pdfDocumentProxy?.numPages || 0;
-  const { searchResults, search } = useSearch();
+  const { searchResults } = useSearch();
 
   // Expose jumpToPage function to parent whenever it changes
   useEffect(() => {
@@ -285,21 +279,8 @@ function PDFViewerContent({
     text: string;
   } | null>(null);
 
-  // Perform search when searchTerm changes
-  useEffect(() => {
-    if (searchTerm && searchTerm.trim().length > 0) {
-      try {
-        search(searchTerm);
-      } catch (err) {
-        console.error("Search error:", err);
-        if (onSearchError) {
-          onSearchError(
-            err instanceof Error ? err : new Error("Search failed")
-          );
-        }
-      }
-    }
-  }, [searchTerm, search, onSearchError]);
+  // SearchUI component manages its own search state independently
+  // No need to manage search in PDFViewerContent
 
   // Process search results and update count (HighlightLayer handles visual highlighting)
   useEffect(() => {
@@ -547,10 +528,7 @@ export default function App() {
   const pdfSource = pdfBlobUrl || source;
 
   /** Search */
-  const [searchTerm, setSearchTerm] = useState("");
-  const [searchResultCount, setSearchResultCount] = useState(0);
-  const [searchResultsData, setSearchResultsData] = useState<SearchMatch[]>([]);
-  const [currentSearchIndex, setCurrentSearchIndex] = useState(0);
+  const [, setSearchResultsData] = useState<SearchMatch[]>([]);
 
   /** Highlights */
   const [highlights, setHighlights] = useState<LabeledHighlight[]>(() => {
@@ -584,9 +562,8 @@ export default function App() {
   >(null);
 
   /** Page Navigation - synced with PDFViewerContent */
-  const [currentPage, setCurrentPage] = useState(1);
+  const [, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(9);
-  const [pageInputValue, setPageInputValue] = useState("1");
   const jumpToPageFn = useRef<
     ((page: number, options?: { behavior: "auto" }) => void) | null
   >(null);
@@ -623,10 +600,8 @@ export default function App() {
     type: "info",
   });
 
-  // Sync page input with current page
-  useEffect(() => {
-    setPageInputValue(currentPage.toString());
-  }, [currentPage]);
+  // Sync is handled via state changes only
+  // No separate page input tracking needed
 
   /** Handle jumpToPage ready from PDFViewerContent */
   const handleJumpToPageReady = useCallback(
@@ -718,7 +693,6 @@ export default function App() {
     console.log(`[App.handlePageChange] Setting page to ${page} / ${total}`);
     setCurrentPage(page);
     setTotalPages(total);
-    setPageInputValue(String(page)); // Sync input with current page
   }, []);
 
   /** Switch project */
@@ -971,8 +945,7 @@ export default function App() {
   const currentPageTemplate = templates;
   const handleTemplateInput = (
     fieldId: string,
-    value: string,
-    page: number // kept for compatibility but not used
+    value: string
   ) => {
     // Document-level: use field ID directly without page prefix
     setPageForm((prev) => ({ ...prev, [fieldId]: value }));
@@ -1079,74 +1052,7 @@ export default function App() {
   /** Handle search results data */
   const handleSearchResultsData = useCallback((results: SearchMatch[]) => {
     setSearchResultsData(results);
-    setCurrentSearchIndex(0); // Reset to first result
   }, []);
-
-  /** Navigate to specific search result */
-  const jumpToSearchResult = useCallback(
-    async (index: number) => {
-      console.log('[jumpToSearchResult] Called with index:', index);
-      if (searchResultsData[index]) {
-        const result = searchResultsData[index];
-        console.log('[jumpToSearchResult] Result:', result);
-        const { jumpToHighlightRects } = usePdfJump.getState();
-        const getPdfPageProxy = usePdf.getState().getPdfPageProxy;
-        console.log('[jumpToSearchResult] jumpToHighlightRects type:', typeof jumpToHighlightRects);
-        
-        try {
-          const pageProxy = getPdfPageProxy(result.pageNumber);
-          const rects = await calculateHighlightRects(pageProxy, {
-            pageNumber: result.pageNumber,
-            text: result.text,
-            matchIndex: result.matchIndex,
-            searchText: searchTerm, // Pass searchText for exact term highlighting
-          });
-          
-          console.log('[jumpToSearchResult] Rects:', rects, 'Length:', rects?.length);
-          
-          if (rects && rects.length > 0) {
-            console.log('[jumpToSearchResult] Calling jumpToHighlightRects');
-            jumpToHighlightRects(rects, "pixels");
-            console.log('[jumpToSearchResult] jumpToHighlightRects called');
-            setCurrentSearchIndex(index);
-          }
-        } catch (error) {
-          console.error('[jumpToSearchResult] Error:', error);
-          // Fallback to page jump if highlighting fails
-          if (jumpToPageFn.current) {
-            jumpToPageFn.current(result.pageNumber);
-            setCurrentSearchIndex(index);
-          }
-        }
-      }
-    },
-    [searchResultsData, searchTerm]
-  );
-
-  /** Navigate to next search result */
-  const nextSearchResult = useCallback(() => {
-    if (searchResultsData.length > 0) {
-      const nextIndex = (currentSearchIndex + 1) % searchResultsData.length;
-      jumpToSearchResult(nextIndex);
-    }
-  }, [currentSearchIndex, searchResultsData.length, jumpToSearchResult]);
-
-  /** Navigate to previous search result */
-  const prevSearchResult = useCallback(() => {
-    if (searchResultsData.length > 0) {
-      const prevIndex =
-        (currentSearchIndex - 1 + searchResultsData.length) %
-        searchResultsData.length;
-      jumpToSearchResult(prevIndex);
-    }
-  }, [currentSearchIndex, searchResultsData.length, jumpToSearchResult]);
-
-  /** Clear search highlights when search is cleared */
-  useEffect(() => {
-    if (!searchTerm || searchTerm.trim().length === 0) {
-      setHighlights((prev) => prev.filter((h) => h.kind !== "search"));
-    }
-  }, [searchTerm]);
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -1278,7 +1184,7 @@ export default function App() {
           <Root
             source={pdfSource}
             className="flex-1 flex flex-col"
-            zoomOptions={{ minZoom: 0.5, maxZoom: 3, initialZoom: 0.7 }}
+            zoomOptions={{ minZoom: 0.5, maxZoom: 3 }}
             loader={
               <div className="flex items-center justify-center h-full">
                 <div className="text-center">
@@ -1381,16 +1287,11 @@ export default function App() {
                 <PDFViewerContent
                   highlights={highlights}
                   onAddHighlight={addHighlight}
-                  searchTerm={searchTerm}
-                  onSearchResultsChange={setSearchResultCount}
+                  onSearchResultsChange={() => {}}
                   onPageChange={handlePageChange}
                   onJumpToPageReady={handleJumpToPageReady}
                   onSearchResultsData={handleSearchResultsData}
                   onRequestHighlightLabel={handleRequestHighlightLabel}
-                  onSearchError={(err) => {
-                    console.error("Search error:", err);
-                    error(`Search failed: ${err.message || "Unknown error"}`);
-                  }}
                 />
               </div>
             </div>
@@ -1498,8 +1399,7 @@ export default function App() {
                           onChange={(e) =>
                             handleTemplateInput(
                               f.id,
-                              e.target.value,
-                              currentPage
+                              e.target.value
                             )
                           }
                           aria-label={f.label}
@@ -1607,7 +1507,6 @@ export default function App() {
         onClose={() => setShowTemplateManager(false)}
         templates={templates}
         onSaveTemplates={handleSaveTemplates}
-        totalPages={totalPages}
       />
     </div>
   );

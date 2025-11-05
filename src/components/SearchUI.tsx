@@ -10,14 +10,6 @@ import {
 import { useDebounce } from "use-debounce";
 import { useEffect, useState } from "react";
 
-// Define the TextPosition interface
-interface TextPosition {
-  pageNumber: number;
-  text: string;
-  matchIndex: number;
-  searchText?: string;
-}
-
 interface ResultItemProps {
   result: SearchResult;
   originalSearchText: string;

@@ -19,9 +19,8 @@ export interface FieldTemplate {
 export interface TemplateManagerProps {
   isOpen: boolean;
   onClose: () => void;
-  templates: Record<number, FieldTemplate[]>;
-  onSaveTemplates: (templates: Record<number, FieldTemplate[]>) => void;
-  totalPages: number;
+  templates: FieldTemplate[];
+  onSaveTemplates: (templates: FieldTemplate[]) => void;
 }
 
 export const TemplateManager: React.FC<TemplateManagerProps> = ({
@@ -29,15 +28,13 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
   onClose,
   templates,
   onSaveTemplates,
-  totalPages,
 }) => {
   const [editingTemplates, setEditingTemplates] =
-    useState<Record<number, FieldTemplate[]>>(templates);
-  const [selectedPage, setSelectedPage] = useState(1);
+    useState<FieldTemplate[]>(templates);
   const [addFieldModal, setAddFieldModal] = useState(false);
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
-    type: "remove" | "copy" | "clear" | null;
+    type: "remove" | "clear" | null;
     fieldId?: string;
   }>({
     isOpen: false,
@@ -56,10 +53,7 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
       required: false,
     };
 
-    setEditingTemplates((prev) => ({
-      ...prev,
-      [selectedPage]: [...(prev[selectedPage] || []), newField],
-    }));
+    setEditingTemplates((prev) => [...prev, newField]);
   };
 
   const handleRemoveField = (fieldId: string) => {
@@ -72,12 +66,9 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
 
   const confirmRemoveField = () => {
     if (confirmModal.fieldId) {
-      setEditingTemplates((prev) => ({
-        ...prev,
-        [selectedPage]: (prev[selectedPage] || []).filter(
-          (f) => f.id !== confirmModal.fieldId
-        ),
-      }));
+      setEditingTemplates((prev) =>
+        prev.filter((f) => f.id !== confirmModal.fieldId)
+      );
     }
     setConfirmModal({ isOpen: false, type: null });
   };
@@ -86,12 +77,9 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
     fieldId: string,
     updates: Partial<FieldTemplate>
   ) => {
-    setEditingTemplates((prev) => ({
-      ...prev,
-      [selectedPage]: (prev[selectedPage] || []).map((f) =>
-        f.id === fieldId ? { ...f, ...updates } : f
-      ),
-    }));
+    setEditingTemplates((prev) =>
+      prev.map((f) => (f.id === fieldId ? { ...f, ...updates } : f))
+    );
   };
 
   const handleSave = () => {
@@ -99,39 +87,17 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
     onClose();
   };
 
-  const handleCopyToAllPages = () => {
-    setConfirmModal({
-      isOpen: true,
-      type: "copy",
-    });
-  };
-
-  const confirmCopyToAllPages = () => {
-    const currentTemplate = editingTemplates[selectedPage] || [];
-    const newTemplates: Record<number, FieldTemplate[]> = {};
-    for (let i = 1; i <= totalPages; i++) {
-      newTemplates[i] = JSON.parse(JSON.stringify(currentTemplate));
-    }
-    setEditingTemplates(newTemplates);
-    setConfirmModal({ isOpen: false, type: null });
-  };
-
-  const handleClearPage = () => {
+  const handleClearAll = () => {
     setConfirmModal({
       isOpen: true,
       type: "clear",
     });
   };
 
-  const confirmClearPage = () => {
-    setEditingTemplates((prev) => ({
-      ...prev,
-      [selectedPage]: [],
-    }));
+  const confirmClearAll = () => {
+    setEditingTemplates([]);
     setConfirmModal({ isOpen: false, type: null });
   };
-
-  const currentPageFields = editingTemplates[selectedPage] || [];
 
   if (!isOpen) return null;
 
@@ -141,7 +107,7 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
-            <h2 className="text-xl font-semibold">Template Manager</h2>
+            <h2 className="text-xl font-semibold">Template Manager (Document-Level)</h2>
             <button
               onClick={onClose}
               className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
@@ -165,50 +131,28 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
 
           {/* Content */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {/* Page selector and actions */}
+            {/* Actions */}
             <div className="flex items-center gap-2 flex-wrap">
-              <label className="text-sm font-medium">Page:</label>
-              <select
-                value={selectedPage}
-                onChange={(e) => setSelectedPage(Number(e.target.value))}
-                className="flex-1 min-w-[120px] px-3 py-2 border dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-sm"
-                aria-label="Select page number"
-              >
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                  (page) => (
-                    <option key={page} value={page}>
-                      Page {page}
-                    </option>
-                  )
-                )}
-              </select>
               <button
-                onClick={handleCopyToAllPages}
-                className="px-3 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-md text-sm font-medium"
-                title="Copy to all pages"
-              >
-                📋 Copy to All
-              </button>
-              <button
-                onClick={handleClearPage}
+                onClick={handleClearAll}
                 className="px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-md text-sm font-medium"
-                title="Clear this page"
+                title="Clear all fields"
               >
-                🗑 Clear Page
+                🗑 Clear All Fields
               </button>
             </div>
 
             {/* Fields list */}
             <div className="space-y-3">
-              {currentPageFields.length === 0 ? (
+              {editingTemplates.length === 0 ? (
                 <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                  <p className="text-sm">No fields for this page</p>
+                  <p className="text-sm">No fields defined</p>
                   <p className="text-xs mt-1">
                     Click "Add Field" to create one
                   </p>
                 </div>
               ) : (
-                currentPageFields.map((field, index) => (
+                editingTemplates.map((field, index) => (
                   <div
                     key={field.id}
                     className="p-3 border dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700/50 space-y-2"
@@ -352,20 +296,11 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
       />
 
       <ConfirmModal
-        isOpen={confirmModal.isOpen && confirmModal.type === "copy"}
-        onClose={() => setConfirmModal({ isOpen: false, type: null })}
-        onConfirm={confirmCopyToAllPages}
-        title="Copy Template"
-        message="Copy current page template to all pages? This will overwrite existing templates."
-        type="warning"
-      />
-
-      <ConfirmModal
         isOpen={confirmModal.isOpen && confirmModal.type === "clear"}
         onClose={() => setConfirmModal({ isOpen: false, type: null })}
-        onConfirm={confirmClearPage}
-        title="Clear Page"
-        message="Clear all fields on this page?"
+        onConfirm={confirmClearAll}
+        title="Clear All Fields"
+        message="Clear all fields? This action cannot be undone."
         type="warning"
       />
     </>
