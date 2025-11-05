@@ -39,7 +39,7 @@ export const PageNavigationButtons = ({
     if (onPageChange) {
       onPageChange(currentPage, pages);
     }
-  }, [currentPage, pages, onPageChange]);
+  }, [currentPage, pages]); // Removed onPageChange from dependencies to prevent infinite loop
 
   return (
     <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 flex items-center gap-3 bg-white/95 backdrop-blur-sm rounded-full shadow-lg px-4 py-2.5 border border-gray-200">

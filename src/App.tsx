@@ -259,18 +259,20 @@ function PDFViewerContent({
   // Expose jumpToPage function to parent whenever it changes
   useEffect(() => {
     if (jumpToPage) {
-      console.log('[PDFViewerContent] jumpToPage is now available, notifying parent');
       onJumpToPageReady(jumpToPage);
     }
-  }, [jumpToPage, onJumpToPageReady]);
+    // Intentionally excluding onJumpToPageReady from deps to prevent infinite loop
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jumpToPage]);
 
   // Notify parent of page changes
   useEffect(() => {
     if (currentPageNumber && totalPages) {
-      console.log(`[PDFViewerContent] Page changed to ${currentPageNumber} / ${totalPages}`);
       onPageChange(currentPageNumber, totalPages);
     }
-  }, [currentPageNumber, totalPages, onPageChange]);
+    // Intentionally excluding onPageChange from deps to prevent infinite loop
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPageNumber, totalPages]);
 
   // State for pending selection
   const [pendingSelection, setPendingSelection] = useState<{
@@ -318,11 +320,9 @@ function PDFViewerContent({
       onSearchResultsChange(0);
       onSearchResultsData([]);
     }
-  }, [
-    searchResults,
-    onSearchResultsChange,
-    onSearchResultsData,
-  ]);
+    // Intentionally excluding callbacks from deps to prevent infinite loop
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchResults]);
 
   // OLD CODE REMOVED - HighlightLayer now handles visual highlighting automatically
   // The old async highlight creation code has been removed
@@ -402,30 +402,9 @@ function PDFViewerContent({
               const pageHighlights = highlights.filter(
                 (h) => h.pageNumber === pageNumber
               );
-              console.log(`[CustomLayer] Page ${pageNumber}: ${pageHighlights.length} highlights`);
-              console.log(`[CustomLayer] Total highlights available:`, highlights.length);
-              console.log(`[CustomLayer] Search highlights:`, highlights.filter(h => h.kind === 'search').length);
-              
-              // Add a test highlight to verify CustomLayer is rendering
-              const testHighlight = pageNumber === 1 ? (
-                <div
-                  key="test-highlight"
-                  className="absolute pointer-events-none"
-                  style={{
-                    left: '100px',
-                    top: '100px',
-                    width: '200px',
-                    height: '30px',
-                    backgroundColor: 'rgba(255, 0, 0, 0.5)',
-                    border: '2px solid red',
-                    zIndex: 9999,
-                  }}
-                />
-              ) : null;
               
               return (
                 <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 100 }}>
-                  {testHighlight}
                   {pageHighlights.map((h) => (
                     <div
                       key={h.id}
@@ -545,7 +524,7 @@ export default function App() {
       const parsed = JSON.parse(saved);
       // Migration: convert old page-based format to document-level array
       if (!Array.isArray(parsed)) {
-        console.log('Migrating old page-based templates to document-level');
+        // Silent migration to new format
         return defaultTemplates;
       }
       return parsed;
@@ -690,7 +669,6 @@ export default function App() {
 
   /** Handle page change from PDFViewerContent */
   const handlePageChange = useCallback((page: number, total: number) => {
-    console.log(`[App.handlePageChange] Setting page to ${page} / ${total}`);
     setCurrentPage(page);
     setTotalPages(total);
   }, []);
@@ -870,21 +848,16 @@ export default function App() {
   /** Jump to page */
   const jumpToPage = useCallback(
     (page: number) => {
-      console.log(`[App.jumpToPage] Attempting to jump to page ${page}, total pages: ${totalPages}, ready: ${jumpToPageFn.current !== null}`);
       if (page < 1 || page > totalPages) {
-        console.log(`[App.jumpToPage] Page ${page} out of bounds`);
         return;
       }
 
       if (jumpToPageFn.current) {
         try {
-          console.log(`[App.jumpToPage] Calling jumpToPageFn.current(${page})`);
           jumpToPageFn.current(page, { behavior: "auto" });
         } catch (err) {
           console.error("Error navigating to page:", err);
         }
-      } else {
-        console.error("[App.jumpToPage] jumpToPageFn.current is null!");
       }
     },
     [totalPages]
