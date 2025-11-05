@@ -1312,6 +1312,17 @@ export default function App() {
                 >
                   {showSearchUI ? "◀ Hide" : "▶ Show"} Search
                 </button>
+                
+                {/* Compact search input when sidebar is hidden */}
+                {!showSearchUI && (
+                  <Search>
+                    <input
+                      type="text"
+                      placeholder="Search in document..."
+                      className="w-64 px-3 py-1 text-sm border rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    />
+                  </Search>
+                )}
                 <button
                   type="button"
                   onClick={() => setShowThumbnails(!showThumbnails)}
