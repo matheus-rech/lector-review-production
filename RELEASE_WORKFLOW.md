@@ -4,7 +4,10 @@ This document outlines the automated release workflow for the Lector Review desk
 
 ## Overview
 
-The workflow is defined in the file `.github/workflows/build-electron.yml`. It is triggered automatically when a new tag is pushed to the repository (e.g., `v1.0.1`, `v1.1.0`). It can also be triggered manually from the GitHub Actions tab.
+The workflow is defined in the file `.github/workflows/build-electron.yml`. It is triggered automatically when:
+- A new tag is pushed to the repository (e.g., `v1.0.1`, `v1.1.0`)
+- Code is pushed to the `release` branch
+- Manually triggered from the GitHub Actions tab
 
 ## How it Works
 
@@ -16,19 +19,47 @@ The workflow performs the following steps:
 4.  **Uploads Artifacts**: The built files are uploaded as artifacts to the workflow run, so they can be downloaded and tested before a release is created.
 5.  **Creates GitHub Release**: When a tag is pushed, a new GitHub Release is created automatically. The release notes are generated from the commit history, and the build artifacts are attached to the release for easy download.
 
-## How to Trigger a Release
+## How to Trigger a Build
 
-To create a new release, follow these steps:
+There are three ways to trigger the Electron build workflow:
+
+### Option 1: Push a Version Tag (Creates GitHub Release)
 
 1.  **Ensure the `master` branch is up to date** with all the changes you want to include in the release.
-2.  **Create a new tag** and push it to the repository. You can do this from your local machine:
+2.  **Create a new tag** and push it to the repository:
 
     ```bash
     git tag -a v1.0.1 -m "Release v1.0.1"
     git push origin v1.0.1
     ```
 
-3.  **The GitHub Actions workflow will automatically run**, build the application, and create a new release.
+3.  **The workflow will automatically create a GitHub Release** with all installers attached.
+
+### Option 2: Push to Release Branch (Build Only)
+
+1.  **Push your changes to the `release` branch**:
+
+    ```bash
+    git checkout release
+    git merge master
+    git push origin release
+    ```
+
+2.  **The workflow will build installers** for all platforms and upload them as artifacts.
+3.  **No GitHub Release is created** - this is useful for testing builds before creating an official release.
+
+### Option 3: Manual Trigger
+
+You can also trigger the workflow manually from the **Actions** tab in the GitHub repository. Select the **Build Electron App** workflow and click **Run workflow**.
+
+## Build vs Release
+
+**Important distinction:**
+- **Tag push** → Builds installers AND creates a GitHub Release
+- **Release branch push** → Builds installers only (no release created)
+- **Manual trigger** → Builds installers only (no release created)
+
+This allows you to test builds on the `release` branch before creating an official release with a tag.
 
 ## Manual Workflow Trigger
 
