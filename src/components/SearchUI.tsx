@@ -109,6 +109,27 @@ export function SearchUI() {
                 </div>
               )}
 
+              {/* Fuzzy Matches Section */}
+              {results.fuzzyMatches.length > 0 && (
+                <div className="space-y-2">
+                  <h3 className="text-sm font-medium text-gray-700">
+                    Fuzzy Matches
+                    <span className="ml-2 text-xs text-gray-500">
+                      (approximate matches)
+                    </span>
+                  </h3>
+                  <div className="divide-y divide-gray-100 bg-amber-50 rounded-lg p-2">
+                    {results.fuzzyMatches.map((result) => (
+                      <ResultItem
+                        key={`fuzzy-${result.pageNumber}-${result.matchIndex}`}
+                        result={result}
+                        originalSearchText={searchText}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {results.hasMoreResults && (
                 <button
                   onClick={handleLoadMore}
