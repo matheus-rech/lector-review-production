@@ -1259,7 +1259,6 @@ export default function App() {
                 <PDFViewerContent
                   highlights={highlights}
                   onAddHighlight={addHighlight}
-                  onSearchResultsChange={() => {}}
                   onPageChange={handlePageChange}
                   onJumpToPageReady={handleJumpToPageReady}
                   onSearchResultsData={handleSearchResultsData}
