@@ -507,7 +507,6 @@ export default function App() {
   const pdfSource = pdfBlobUrl || source;
 
   /** Search */
-  const [, setSearchResultsData] = useState<SearchMatch[]>([]);
 
   /** Highlights */
   const [highlights, setHighlights] = useState<LabeledHighlight[]>(() => {
