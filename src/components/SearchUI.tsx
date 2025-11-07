@@ -7,16 +7,8 @@ import {
   usePdfJump,
   useSearch,
 } from "@anaralabs/lector";
-import { useDebounce } from "use-debounce";
+import { useDebounce } from "@/hooks";
 import { useEffect, useState } from "react";
-
-// Define the TextPosition interface
-interface TextPosition {
-  pageNumber: number;
-  text: string;
-  matchIndex: number;
-  searchText?: string;
-}
 
 interface ResultItemProps {
   result: SearchResult;
@@ -57,7 +49,7 @@ const ResultItem = ({ result, originalSearchText }: ResultItemProps) => {
 // Search UI component - matches official docs exactly
 export function SearchUI() {
   const [searchText, setSearchText] = useState("");
-  const [debouncedSearchText] = useDebounce(searchText, 500);
+  const debouncedSearchText = useDebounce(searchText, 500);
   const [limit, setLimit] = useState(5);
   const { searchResults: results, search } = useSearch();
 
