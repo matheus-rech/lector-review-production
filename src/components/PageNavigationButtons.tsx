@@ -39,7 +39,9 @@ export const PageNavigationButtons = ({
     if (onPageChange) {
       onPageChange(currentPage, pages);
     }
-  }, [currentPage, pages, onPageChange]);
+    // Intentionally excluding onPageChange from deps to prevent infinite loop
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, pages]);
 
   return (
     <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 flex items-center gap-3 bg-white/95 backdrop-blur-sm rounded-full shadow-lg px-4 py-2.5 border border-gray-200">
