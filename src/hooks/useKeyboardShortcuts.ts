@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect } from "react";
 
 export interface KeyboardShortcut {
   key: string;
@@ -26,15 +26,15 @@ export function useKeyboardShortcuts(
       // Don't trigger shortcuts when typing in input fields
       const target = event.target as HTMLElement;
       if (
-        target.tagName === 'INPUT' ||
-        target.tagName === 'TEXTAREA' ||
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
         target.isContentEditable
       ) {
         // Allow Ctrl+Z, Ctrl+Y, Ctrl+S in input fields
         if (
           !(
             (event.ctrlKey || event.metaKey) &&
-            (event.key === 'z' || event.key === 'y' || event.key === 's')
+            (event.key === "z" || event.key === "y" || event.key === "s")
           )
         ) {
           return;
@@ -42,8 +42,11 @@ export function useKeyboardShortcuts(
       }
 
       for (const shortcut of shortcuts) {
-        const keyMatches = event.key.toLowerCase() === shortcut.key.toLowerCase();
-        const ctrlMatches = shortcut.ctrl ? event.ctrlKey || event.metaKey : !event.ctrlKey && !event.metaKey;
+        const keyMatches =
+          event.key.toLowerCase() === shortcut.key.toLowerCase();
+        const ctrlMatches = shortcut.ctrl
+          ? event.ctrlKey || event.metaKey
+          : !event.ctrlKey && !event.metaKey;
         const shiftMatches = shortcut.shift ? event.shiftKey : !event.shiftKey;
         const altMatches = shortcut.alt ? event.altKey : !event.altKey;
 
@@ -55,8 +58,8 @@ export function useKeyboardShortcuts(
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [shortcuts, enabled]);
 }
 
@@ -65,28 +68,28 @@ export function useKeyboardShortcuts(
  */
 export function formatShortcut(shortcut: KeyboardShortcut): string {
   const parts: string[] = [];
-  
-  if (shortcut.ctrl) parts.push('Ctrl');
-  if (shortcut.shift) parts.push('Shift');
-  if (shortcut.alt) parts.push('Alt');
-  if (shortcut.meta) parts.push('Cmd');
+
+  if (shortcut.ctrl) parts.push("Ctrl");
+  if (shortcut.shift) parts.push("Shift");
+  if (shortcut.alt) parts.push("Alt");
+  if (shortcut.meta) parts.push("Cmd");
   parts.push(shortcut.key.toUpperCase());
-  
-  return parts.join('+');
+
+  return parts.join("+");
 }
 
 /**
  * Common keyboard shortcuts for the application
  */
 export const commonShortcuts = {
-  save: { key: 's', ctrl: true, description: 'Save current work' },
-  undo: { key: 'z', ctrl: true, description: 'Undo last action' },
-  redo: { key: 'y', ctrl: true, description: 'Redo last action' },
-  search: { key: 'f', ctrl: true, description: 'Focus search' },
-  nextPage: { key: 'ArrowRight', description: 'Next page' },
-  prevPage: { key: 'ArrowLeft', description: 'Previous page' },
-  exportJSON: { key: 'e', ctrl: true, shift: true, description: 'Export JSON' },
-  exportCSV: { key: 'e', ctrl: true, description: 'Export CSV' },
-  newProject: { key: 'n', ctrl: true, description: 'New project' },
-  help: { key: '?', shift: true, description: 'Show help' },
+  save: { key: "s", ctrl: true, description: "Save current work" },
+  undo: { key: "z", ctrl: true, description: "Undo last action" },
+  redo: { key: "y", ctrl: true, description: "Redo last action" },
+  search: { key: "f", ctrl: true, description: "Focus search" },
+  nextPage: { key: "ArrowRight", description: "Next page" },
+  prevPage: { key: "ArrowLeft", description: "Previous page" },
+  exportJSON: { key: "e", ctrl: true, shift: true, description: "Export JSON" },
+  exportCSV: { key: "e", ctrl: true, description: "Export CSV" },
+  newProject: { key: "n", ctrl: true, description: "New project" },
+  help: { key: "?", shift: true, description: "Show help" },
 };

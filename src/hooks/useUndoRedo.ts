@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback } from "react";
 
 interface HistoryState<T> {
   past: T[];
@@ -35,17 +35,20 @@ export function useUndoRedo<T>(
     (newState: T | ((prev: T) => T)) => {
       setHistory((currentHistory) => {
         const resolvedState =
-          typeof newState === 'function'
+          typeof newState === "function"
             ? (newState as (prev: T) => T)(currentHistory.present)
             : newState;
 
         // Don't add to history if state hasn't changed
-        if (JSON.stringify(resolvedState) === JSON.stringify(currentHistory.present)) {
+        if (
+          JSON.stringify(resolvedState) ===
+          JSON.stringify(currentHistory.present)
+        ) {
           return currentHistory;
         }
 
         const newPast = [...currentHistory.past, currentHistory.present];
-        
+
         // Limit history size
         if (newPast.length > maxHistory) {
           newPast.shift();
@@ -68,7 +71,10 @@ export function useUndoRedo<T>(
       }
 
       const previous = currentHistory.past[currentHistory.past.length - 1];
-      const newPast = currentHistory.past.slice(0, currentHistory.past.length - 1);
+      const newPast = currentHistory.past.slice(
+        0,
+        currentHistory.past.length - 1
+      );
 
       return {
         past: newPast,

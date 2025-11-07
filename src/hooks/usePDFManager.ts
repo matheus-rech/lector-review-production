@@ -3,7 +3,7 @@
  * Manages PDF upload, storage, and retrieval
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from "react";
 import {
   storePDF,
   getPDFsByProject,
@@ -12,7 +12,7 @@ import {
   revokePDFBlobURL,
   PDFMetadata,
   formatFileSize,
-} from '../utils/pdfStorage';
+} from "../utils/pdfStorage";
 
 export interface PDFWithURL extends PDFMetadata {
   blobUrl?: string;
@@ -37,7 +37,7 @@ export function usePDFManager(projectName: string) {
         setCurrentPdfId(projectPDFs[0].id);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load PDFs');
+      setError(err instanceof Error ? err.message : "Failed to load PDFs");
     } finally {
       setLoading(false);
     }
@@ -56,8 +56,8 @@ export function usePDFManager(projectName: string) {
         setError(null);
 
         // Validate file type
-        if (file.type !== 'application/pdf') {
-          throw new Error('Only PDF files are supported');
+        if (file.type !== "application/pdf") {
+          throw new Error("Only PDF files are supported");
         }
 
         // Validate file size (max 50MB)
@@ -74,7 +74,7 @@ export function usePDFManager(projectName: string) {
         return metadata;
       } catch (err) {
         const errorMessage =
-          err instanceof Error ? err.message : 'Failed to upload PDF';
+          err instanceof Error ? err.message : "Failed to upload PDF";
         setError(errorMessage);
         return null;
       } finally {
@@ -103,12 +103,14 @@ export function usePDFManager(projectName: string) {
         // If deleted PDF was current, select another
         if (currentPdfId === id) {
           const remainingPDFs = pdfs.filter((p) => p.id !== id);
-          setCurrentPdfId(remainingPDFs.length > 0 ? remainingPDFs[0].id : null);
+          setCurrentPdfId(
+            remainingPDFs.length > 0 ? remainingPDFs[0].id : null
+          );
         }
 
         return true;
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to delete PDF');
+        setError(err instanceof Error ? err.message : "Failed to delete PDF");
         return false;
       } finally {
         setLoading(false);
@@ -125,7 +127,7 @@ export function usePDFManager(projectName: string) {
       const url = await createPDFBlobURL(currentPdfId);
       return url;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load PDF');
+      setError(err instanceof Error ? err.message : "Failed to load PDF");
       return null;
     }
   }, [currentPdfId]);

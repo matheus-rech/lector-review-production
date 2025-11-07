@@ -14,7 +14,14 @@ export interface SchemaField {
   id: string;
   label: string;
   description?: string;
-  type: 'string' | 'number' | 'integer' | 'boolean' | 'enum' | 'object' | 'array';
+  type:
+    | "string"
+    | "number"
+    | "integer"
+    | "boolean"
+    | "enum"
+    | "object"
+    | "array";
   required: boolean;
   enum?: string[];
   properties?: SchemaField[];
@@ -44,7 +51,11 @@ export function parseSchema(schema: any): SchemaSection[] {
       id: key,
       title: prop.description || key,
       description: prop.description,
-      fields: parseProperties(prop.properties || {}, key, schema.definitions || {}),
+      fields: parseProperties(
+        prop.properties || {},
+        key,
+        schema.definitions || {}
+      ),
     };
     sections.push(section);
   }
@@ -68,12 +79,12 @@ function parseProperties(
 
     // Check if this is a reference to a definition
     if (prop.$ref) {
-      const refPath = prop.$ref.replace('#/definitions/', '');
+      const refPath = prop.$ref.replace("#/definitions/", "");
       const definition = definitions[refPath];
-      
+
       if (definition) {
         // Handle sourced types
-        if (refPath.startsWith('Sourced')) {
+        if (refPath.startsWith("Sourced")) {
           const baseType = getBaseType(definition);
           fields.push({
             id: key,
@@ -86,13 +97,17 @@ function parseProperties(
           });
         } else {
           // Handle other definitions
-          const nestedFields = parseProperties(definition.properties || {}, path, definitions);
+          const nestedFields = parseProperties(
+            definition.properties || {},
+            path,
+            definitions
+          );
           if (nestedFields.length > 0) {
             fields.push({
               id: key,
               label: extractLabel(prop.description || key),
               description: prop.description,
-              type: 'object',
+              type: "object",
               required: false,
               path,
               properties: nestedFields,
@@ -104,25 +119,29 @@ function parseProperties(
     }
     // Handle direct types
     else if (prop.type) {
-      if (prop.type === 'object' && prop.properties) {
-        const nestedFields = parseProperties(prop.properties, path, definitions);
+      if (prop.type === "object" && prop.properties) {
+        const nestedFields = parseProperties(
+          prop.properties,
+          path,
+          definitions
+        );
         fields.push({
           id: key,
           label: extractLabel(prop.description || key),
           description: prop.description,
-          type: 'object',
+          type: "object",
           required: false,
           path,
           properties: nestedFields,
           isSourced: false,
         });
-      } else if (prop.type === 'array' && prop.items) {
+      } else if (prop.type === "array" && prop.items) {
         const itemField = parseArrayItems(prop.items, path, definitions);
         fields.push({
           id: key,
           label: extractLabel(prop.description || key),
           description: prop.description,
-          type: 'array',
+          type: "array",
           required: false,
           path,
           items: itemField,
@@ -149,7 +168,7 @@ function parseProperties(
           id: key,
           label: extractLabel(prop.description || key),
           description: prop.description,
-          type: 'enum',
+          type: "enum",
           required: false,
           enum: merged.enum,
           path,
@@ -165,16 +184,20 @@ function parseProperties(
 /**
  * Parse array items
  */
-function parseArrayItems(items: any, parentPath: string, definitions: any): SchemaField {
+function parseArrayItems(
+  items: any,
+  parentPath: string,
+  definitions: any
+): SchemaField {
   if (items.$ref) {
-    const refPath = items.$ref.replace('#/definitions/', '');
+    const refPath = items.$ref.replace("#/definitions/", "");
     const definition = definitions[refPath];
-    
-    if (definition && refPath.startsWith('Sourced')) {
+
+    if (definition && refPath.startsWith("Sourced")) {
       const baseType = getBaseType(definition);
       return {
-        id: 'item',
-        label: 'Item',
+        id: "item",
+        label: "Item",
         type: baseType,
         required: false,
         path: `${parentPath}[]`,
@@ -184,9 +207,9 @@ function parseArrayItems(items: any, parentPath: string, definitions: any): Sche
   }
 
   return {
-    id: 'item',
-    label: 'Item',
-    type: 'string',
+    id: "item",
+    label: "Item",
+    type: "string",
     required: false,
     path: `${parentPath}[]`,
     isSourced: false,
@@ -196,16 +219,18 @@ function parseArrayItems(items: any, parentPath: string, definitions: any): Sche
 /**
  * Get base type from sourced definition
  */
-function getBaseType(definition: any): 'string' | 'number' | 'integer' | 'boolean' {
-  if (!definition.properties?.value) return 'string';
-  
+function getBaseType(
+  definition: any
+): "string" | "number" | "integer" | "boolean" {
+  if (!definition.properties?.value) return "string";
+
   const valueType = definition.properties.value.type;
-  if (valueType === 'string') return 'string';
-  if (valueType === 'number') return 'number';
-  if (valueType === 'integer') return 'integer';
-  if (valueType === 'boolean') return 'boolean';
-  
-  return 'string';
+  if (valueType === "string") return "string";
+  if (valueType === "number") return "number";
+  if (valueType === "integer") return "integer";
+  if (valueType === "boolean") return "boolean";
+
+  return "string";
 }
 
 /**
@@ -216,7 +241,7 @@ function mergeAllOf(allOf: any[], definitions: any): any {
 
   for (const item of allOf) {
     if (item.$ref) {
-      const refPath = item.$ref.replace('#/definitions/', '');
+      const refPath = item.$ref.replace("#/definitions/", "");
       const definition = definitions[refPath];
       Object.assign(merged, definition);
     }
@@ -234,14 +259,16 @@ function mergeAllOf(allOf: any[], definitions: any): any {
 /**
  * Map JSON schema types to internal types
  */
-function mapType(type: string): 'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array' {
-  if (type === 'string') return 'string';
-  if (type === 'number') return 'number';
-  if (type === 'integer') return 'integer';
-  if (type === 'boolean') return 'boolean';
-  if (type === 'object') return 'object';
-  if (type === 'array') return 'array';
-  return 'string';
+function mapType(
+  type: string
+): "string" | "number" | "integer" | "boolean" | "object" | "array" {
+  if (type === "string") return "string";
+  if (type === "number") return "number";
+  if (type === "integer") return "integer";
+  if (type === "boolean") return "boolean";
+  if (type === "object") return "object";
+  if (type === "array") return "array";
+  return "string";
 }
 
 /**
@@ -274,7 +301,7 @@ export function createSourcedValue<T>(
  * Extract value from sourced value
  */
 export function extractValue<T>(sourced: SourcedValue<T> | T): T {
-  if (sourced && typeof sourced === 'object' && 'value' in sourced) {
+  if (sourced && typeof sourced === "object" && "value" in sourced) {
     return sourced.value;
   }
   return sourced as T;
@@ -284,5 +311,5 @@ export function extractValue<T>(sourced: SourcedValue<T> | T): T {
  * Check if value is sourced
  */
 export function isSourcedValue(value: any): value is SourcedValue {
-  return value && typeof value === 'object' && 'value' in value;
+  return value && typeof value === "object" && "value" in value;
 }
