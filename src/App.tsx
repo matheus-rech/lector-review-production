@@ -278,13 +278,8 @@ function PDFViewerContent({
 
   // SearchUI component manages its own search state independently
   // No need to manage search in PDFViewerContent
-
-  // Process search results (HighlightLayer handles visual highlighting)
-  // SearchUI component manages its own display of search results
-  useEffect(() => {
-    // Search results are now managed entirely by SearchUI component
-    // No need to pass count or data to parent
-  }, [searchResults]);
+  // Search results are now managed entirely by SearchUI component
+  // HighlightLayer handles visual highlighting automatically
 
   // OLD CODE REMOVED - HighlightLayer now handles visual highlighting automatically
   // The old async highlight creation code has been removed
