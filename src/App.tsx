@@ -249,7 +249,6 @@ function PDFViewerContent({
   const currentPageNumber = usePDFPageNumber();
   const pdfDocumentProxy = usePdf((state) => state.pdfDocumentProxy);
   const totalPages = pdfDocumentProxy?.numPages || 0;
-  const { searchResults } = useSearch();
 
   // Expose jumpToPage function to parent whenever it changes
   useEffect(() => {
