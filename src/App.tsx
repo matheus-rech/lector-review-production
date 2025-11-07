@@ -19,7 +19,6 @@ import {
   usePdf,
   usePdfJump,
   usePDFPageNumber,
-  useSearch,
   useSelectionDimensions,
   // NEW: Zoom controls
   ZoomIn,
@@ -622,8 +621,7 @@ export default function App() {
   }, [currentProject, pageForm]);
 
   /** Handle page change from PDFViewerContent */
-  const handlePageChange = useCallback((page: number, total: number) => {
-    setCurrentPage(page);
+  const handlePageChange = useCallback((_page: number, total: number) => {
     setTotalPages(total);
   }, []);
 
