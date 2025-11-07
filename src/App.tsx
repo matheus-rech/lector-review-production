@@ -34,7 +34,6 @@ import { SchemaForm } from "./components/SchemaForm";
 import { TemplateManager } from "./components/TemplateManager";
 import { Toast, useToast } from "./components/Toast";
 import { usePDFManager } from "./hooks/usePDFManager";
-import type { SearchMatch } from "./types";
 import { createSourcedValue, parseSchema } from "./utils/schemaParser";
 
 // Configure PDF.js worker
@@ -227,20 +226,16 @@ const setValueAtPath = (
 function PDFViewerContent({
   highlights,
   onAddHighlight,
-  onSearchResultsChange,
   onPageChange,
   onJumpToPageReady,
-  onSearchResultsData,
   onRequestHighlightLabel,
 }: {
   highlights: LabeledHighlight[];
   onAddHighlight: (rect: Rect, pageNumber: number, label: string) => void;
-  onSearchResultsChange: (count: number) => void;
   onPageChange: (page: number, total: number) => void;
   onJumpToPageReady: (
     jumpFn: (page: number, options?: { behavior: "auto" }) => void
   ) => void;
-  onSearchResultsData: (results: SearchMatch[]) => void;
   onRequestHighlightLabel: (
     rect: Rect,
     pageNumber: number,
@@ -284,44 +279,11 @@ function PDFViewerContent({
   // SearchUI component manages its own search state independently
   // No need to manage search in PDFViewerContent
 
-  // Process search results and update count (HighlightLayer handles visual highlighting)
+  // Process search results (HighlightLayer handles visual highlighting)
+  // SearchUI component manages its own display of search results
   useEffect(() => {
-    const hasExactMatches = searchResults?.exactMatches && searchResults.exactMatches.length > 0;
-    const hasFuzzyMatches = searchResults?.fuzzyMatches && searchResults.fuzzyMatches.length > 0;
-    
-    if (hasExactMatches || hasFuzzyMatches) {
-      // Combine exact and fuzzy matches for total count
-      const exactCount = searchResults.exactMatches?.length || 0;
-      const fuzzyCount = searchResults.fuzzyMatches?.length || 0;
-      const totalCount = exactCount + fuzzyCount;
-      
-      onSearchResultsChange(totalCount);
-      
-      // Combine all matches for results data
-      const allMatches = [
-        ...(searchResults.exactMatches || []).map((match, idx) => ({
-          id: `exact-${idx}-${Date.now()}`,
-          pageNumber: match.pageNumber,
-          text: match.text || "",
-          matchIndex: match.matchIndex,
-          type: 'exact' as const,
-        })),
-        ...(searchResults.fuzzyMatches || []).map((match, idx) => ({
-          id: `fuzzy-${idx}-${Date.now()}`,
-          pageNumber: match.pageNumber,
-          text: match.text || "",
-          matchIndex: match.matchIndex,
-          type: 'fuzzy' as const,
-        })),
-      ];
-      
-      onSearchResultsData(allMatches as SearchMatch[]);
-    } else {
-      onSearchResultsChange(0);
-      onSearchResultsData([]);
-    }
-    // Intentionally excluding callbacks from deps to prevent infinite loop
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Search results are now managed entirely by SearchUI component
+    // No need to pass count or data to parent
   }, [searchResults]);
 
   // OLD CODE REMOVED - HighlightLayer now handles visual highlighting automatically
@@ -1020,11 +982,7 @@ export default function App() {
   };
 
   // REMOVED: handleSearchHighlights callback - no longer needed with HighlightLayer
-
-  /** Handle search results data */
-  const handleSearchResultsData = useCallback((results: SearchMatch[]) => {
-    setSearchResultsData(results);
-  }, []);
+  // REMOVED: handleSearchResultsData callback - search results managed by SearchUI
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -1261,7 +1219,6 @@ export default function App() {
                   onAddHighlight={addHighlight}
                   onPageChange={handlePageChange}
                   onJumpToPageReady={handleJumpToPageReady}
-                  onSearchResultsData={handleSearchResultsData}
                   onRequestHighlightLabel={handleRequestHighlightLabel}
                 />
               </div>
