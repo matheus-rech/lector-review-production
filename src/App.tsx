@@ -496,7 +496,6 @@ export default function App() {
   >(null);
 
   /** Page Navigation - synced with PDFViewerContent */
-  const [, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(9);
   const jumpToPageFn = useRef<
     ((page: number, options?: { behavior: "auto" }) => void) | null
