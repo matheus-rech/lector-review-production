@@ -1,9 +1,9 @@
 /**
  * Feature Flags System
- * 
+ *
  * This module provides a centralized feature flag system for safe rollout
  * of new features. Features can be enabled/disabled via environment variables.
- * 
+ *
  * @module featureFlags
  */
 
@@ -16,37 +16,37 @@ export const FEATURES = {
    * AI-powered data extraction from PDFs
    * Enables LLM integration for automated field filling
    */
-  AI_EXTRACTION: import.meta.env.VITE_ENABLE_AI === 'true',
-  
+  AI_EXTRACTION: import.meta.env.VITE_ENABLE_AI === "true",
+
   /**
    * Cloud synchronization
    * Enables cloud storage and multi-device sync
    */
-  CLOUD_SYNC: import.meta.env.VITE_ENABLE_CLOUD === 'true',
-  
+  CLOUD_SYNC: import.meta.env.VITE_ENABLE_CLOUD === "true",
+
   /**
    * Real-time collaboration features
    * Enables multi-user editing and shared annotations
    */
-  COLLABORATION: import.meta.env.VITE_ENABLE_COLLAB === 'true',
-  
+  COLLABORATION: import.meta.env.VITE_ENABLE_COLLAB === "true",
+
   /**
    * Advanced analytics dashboard
    * Enables cross-document analysis and visualization
    */
-  ADVANCED_ANALYTICS: import.meta.env.VITE_ENABLE_ANALYTICS === 'true',
-  
+  ADVANCED_ANALYTICS: import.meta.env.VITE_ENABLE_ANALYTICS === "true",
+
   /**
    * Plugin system
    * Enables third-party plugin loading
    */
-  PLUGIN_SYSTEM: import.meta.env.VITE_ENABLE_PLUGINS === 'true',
-  
+  PLUGIN_SYSTEM: import.meta.env.VITE_ENABLE_PLUGINS === "true",
+
   /**
    * Experimental features (for development/testing)
    * Enables features that are still in development
    */
-  EXPERIMENTAL: import.meta.env.VITE_ENABLE_EXPERIMENTAL === 'true',
+  EXPERIMENTAL: import.meta.env.VITE_ENABLE_EXPERIMENTAL === "true",
 } as const;
 
 /**
@@ -86,9 +86,9 @@ export function getFeatureFlagStatus(): Record<FeatureFlag, boolean> {
  */
 export function logFeatureFlags(): void {
   if (import.meta.env.DEV) {
-    console.group('🚩 Feature Flags');
+    console.group("🚩 Feature Flags");
     Object.entries(FEATURES).forEach(([key, value]) => {
-      console.log(`${value ? '✅' : '❌'} ${key}: ${value}`);
+      console.log(`${value ? "✅" : "❌"} ${key}: ${value}`);
     });
     console.groupEnd();
   }

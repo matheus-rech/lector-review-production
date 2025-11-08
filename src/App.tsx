@@ -27,7 +27,12 @@ import {
 import { GlobalWorkerOptions } from "pdfjs-dist";
 import "pdfjs-dist/web/pdf_viewer.css";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { PDFList, PDFUpload, PageNavigationButtons, SearchUI } from "./components";
+import {
+  PDFList,
+  PDFUpload,
+  PageNavigationButtons,
+  SearchUI,
+} from "./components";
 import { ConfirmModal, InputModal } from "./components/Modal";
 import { SchemaForm } from "./components/SchemaForm";
 import { TemplateManager } from "./components/TemplateManager";
@@ -289,7 +294,6 @@ function PDFViewerContent({
   // now handles search highlighting automatically via jumpToHighlightRects()
   */
 
-
   // Handle text selection - store pending selection
   useEffect(() => {
     const dimension = selectionDimensions.getDimension();
@@ -335,7 +339,10 @@ function PDFViewerContent({
 
   return (
     <div className="relative w-full max-w-full h-full overflow-hidden flex items-center justify-center">
-      <Pages className="p-4 w-full max-w-full dark:invert-[94%] dark:hue-rotate-180 dark:brightness-[80%] dark:contrast-[228%]" style={{ transform: 'scale(0.85)', transformOrigin: 'center center' }}>
+      <Pages
+        className="p-4 w-full max-w-full dark:invert-[94%] dark:hue-rotate-180 dark:brightness-[80%] dark:contrast-[228%]"
+        style={{ transform: "scale(0.85)", transformOrigin: "center center" }}
+      >
         <Page>
           <CanvasLayer />
           <TextLayer />
@@ -357,9 +364,12 @@ function PDFViewerContent({
               const pageHighlights = highlights.filter(
                 (h) => h.pageNumber === pageNumber
               );
-              
+
               return (
-                <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 100 }}>
+                <div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{ zIndex: 100 }}
+                >
                   {pageHighlights.map((h) => (
                     <div
                       key={h.id}
@@ -382,7 +392,7 @@ function PDFViewerContent({
           </CustomLayer>
         </Page>
       </Pages>
-      
+
       {/* Page Navigation Buttons - Inside Root for context access */}
       <PageNavigationButtons onPageChange={onPageChange} />
     </div>
@@ -470,20 +480,18 @@ export default function App() {
   });
 
   /** Field Templates */
-  const [templates, setTemplates] = useState<FieldTemplate[]>(
-    () => {
-      const saved = localStorage.getItem(`proj:${currentProject}:templates`);
-      if (!saved) return defaultTemplates;
-      
-      const parsed = JSON.parse(saved);
-      // Migration: convert old page-based format to document-level array
-      if (!Array.isArray(parsed)) {
-        // Silent migration to new format
-        return defaultTemplates;
-      }
-      return parsed;
+  const [templates, setTemplates] = useState<FieldTemplate[]>(() => {
+    const saved = localStorage.getItem(`proj:${currentProject}:templates`);
+    if (!saved) return defaultTemplates;
+
+    const parsed = JSON.parse(saved);
+    // Migration: convert old page-based format to document-level array
+    if (!Array.isArray(parsed)) {
+      // Silent migration to new format
+      return defaultTemplates;
     }
-  );
+    return parsed;
+  });
 
   /** Page Form Data */
   const [pageForm, setPageForm] = useState<Record<string, any>>(() => {
@@ -868,10 +876,7 @@ export default function App() {
   /** Template input */
   // Document-level templates (same fields available on all pages)
   const currentPageTemplate = templates;
-  const handleTemplateInput = (
-    fieldId: string,
-    value: string
-  ) => {
+  const handleTemplateInput = (fieldId: string, value: string) => {
     // Document-level: use field ID directly without page prefix
     setPageForm((prev) => ({ ...prev, [fieldId]: value }));
   };
@@ -885,9 +890,7 @@ export default function App() {
   };
 
   /** Template Manager handlers */
-  const handleSaveTemplates = (
-    newTemplates: FieldTemplate[]
-  ) => {
+  const handleSaveTemplates = (newTemplates: FieldTemplate[]) => {
     setTemplates(newTemplates);
     success("Templates saved");
     setShowTemplateManager(false);
@@ -1098,7 +1101,9 @@ export default function App() {
       </aside>
 
       {/* Main content */}
-      <main className={`flex-1 grid ${showSchemaForm ? 'grid-cols-[1fr_340px]' : 'grid-cols-1'} overflow-hidden`}>
+      <main
+        className={`flex-1 grid ${showSchemaForm ? "grid-cols-[1fr_340px]" : "grid-cols-1"} overflow-hidden`}
+      >
         {/* PDF Viewer with Thumbnails and Zoom Controls */}
         <div className="flex flex-col h-full overflow-hidden">
           {/* PDF Viewer Grid with Optional Thumbnails - SINGLE Root wrapping everything */}
@@ -1132,14 +1137,12 @@ export default function App() {
                   onClick={() => setShowSearchUI(!showSearchUI)}
                   className="px-3 py-1 text-sm border rounded hover:bg-gray-200"
                   title="Toggle search"
-                  aria-label={
-                    showSearchUI ? "Hide search" : "Show search"
-                  }
+                  aria-label={showSearchUI ? "Hide search" : "Show search"}
                   aria-expanded={showSearchUI ? "true" : "false"}
                 >
                   {showSearchUI ? "◀ Hide" : "▶ Show"} Search
                 </button>
-                
+
                 {/* Compact search input when sidebar is hidden */}
                 {!showSearchUI && (
                   <Search>
@@ -1219,204 +1222,204 @@ export default function App() {
 
         {/* Right sidebar */}
         {showSchemaForm && (
-        <aside className="border-l p-3 space-y-4 bg-white overflow-y-auto">
-          {/* Form Type Toggle */}
-          <div className="flex items-center gap-2">
-            <button
-              className={`flex-1 px-3 py-2 text-xs border rounded ${
-                !useSchemaForm ? "bg-blue-500 text-white" : "bg-gray-100"
-              }`}
-              onClick={() => setUseSchemaForm(false)}
-              aria-label="Switch to Template Form"
-              aria-pressed={!useSchemaForm ? "true" : "false"}
-            >
-              Template Form
-            </button>
-            <button
-              className={`flex-1 px-3 py-2 text-xs border rounded ${
-                useSchemaForm ? "bg-blue-500 text-white" : "bg-gray-100"
-              }`}
-              onClick={() => setUseSchemaForm(true)}
-              aria-label="Switch to Schema Form"
-              aria-pressed={useSchemaForm ? "true" : "false"}
-            >
-              Schema Form
-            </button>
-          </div>
-
-          {/* Template Manager Button */}
-          {!useSchemaForm && (
-            <div className="mb-2">
+          <aside className="border-l p-3 space-y-4 bg-white overflow-y-auto">
+            {/* Form Type Toggle */}
+            <div className="flex items-center gap-2">
               <button
-                onClick={() => setShowTemplateManager(true)}
-                aria-label="Manage field templates"
-                className="w-full px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 flex items-center justify-center space-x-2"
+                className={`flex-1 px-3 py-2 text-xs border rounded ${
+                  !useSchemaForm ? "bg-blue-500 text-white" : "bg-gray-100"
+                }`}
+                onClick={() => setUseSchemaForm(false)}
+                aria-label="Switch to Template Form"
+                aria-pressed={!useSchemaForm ? "true" : "false"}
               >
-                <span>⚙️</span>
-                <span>Manage Templates</span>
+                Template Form
+              </button>
+              <button
+                className={`flex-1 px-3 py-2 text-xs border rounded ${
+                  useSchemaForm ? "bg-blue-500 text-white" : "bg-gray-100"
+                }`}
+                onClick={() => setUseSchemaForm(true)}
+                aria-label="Switch to Schema Form"
+                aria-pressed={useSchemaForm ? "true" : "false"}
+              >
+                Schema Form
               </button>
             </div>
-          )}
 
-          {/* Per-Page Fields */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-sm">
-                {useSchemaForm
-                  ? "Schema Fields"
-                  : "Document Fields"}
-              </h3>
-            </div>
-
-            {useSchemaForm && parsedSchema ? (
-              <SchemaForm
-                sections={parsedSchema}
-                data={pageForm}
-                onDataChange={handleSchemaDataChange}
-                onLinkHighlight={(path) => {
-                  const userHighlights = highlights.filter(
-                    (h) => h.kind === "user"
-                  );
-
-                  if (pendingHighlightLinkPath === path) {
-                    setPendingHighlightLinkPath(null);
-                    info("Highlight linking cancelled");
-                    return;
-                  }
-
-                  if (userHighlights.length === 0) {
-                    error("Create a highlight before linking");
-                    return;
-                  }
-
-                  if (userHighlights.length === 1) {
-                    info(`Link highlight to field: ${path}`);
-                    linkHighlightToField(path, userHighlights[0].id);
-                    return;
-                  }
-
-                  info(`Select a highlight to link to field: ${path}`);
-                  setPendingHighlightLinkPath(path);
-                }}
-              />
-            ) : (
-              <>
-                <div className="space-y-2 max-h-96 overflow-y-auto">
-                  {currentPageTemplate.map((f) => {
-                    // Document-level: use field ID directly
-                    const inputId = `field-${f.id}`;
-                    return (
-                      <div key={f.id} className="space-y-1">
-                        <label htmlFor={inputId} className="text-xs">
-                          {f.label}
-                        </label>
-                        <input
-                          id={inputId}
-                          className="w-full border p-1 rounded text-sm"
-                          placeholder={f.placeholder || ""}
-                          value={pageForm[f.id] || ""}
-                          onChange={(e) =>
-                            handleTemplateInput(
-                              f.id,
-                              e.target.value
-                            )
-                          }
-                          aria-label={f.label}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Highlights */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-sm">Your Highlights</h3>
-              {pendingHighlightLinkPath && (
+            {/* Template Manager Button */}
+            {!useSchemaForm && (
+              <div className="mb-2">
                 <button
-                  className="text-xs text-blue-600 hover:text-blue-700"
-                  onClick={() => setPendingHighlightLinkPath(null)}
+                  onClick={() => setShowTemplateManager(true)}
+                  aria-label="Manage field templates"
+                  className="w-full px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 flex items-center justify-center space-x-2"
                 >
-                  Cancel
+                  <span>⚙️</span>
+                  <span>Manage Templates</span>
                 </button>
-              )}
-            </div>
-            {pendingHighlightLinkPath && (
-              <div className="text-xs text-blue-600">
-                Select a highlight below to link to {pendingHighlightLinkPath}
               </div>
             )}
-            <ul className="text-sm divide-y max-h-56 overflow-auto">
-              {highlights.length === 0 && (
-                <li className="text-xs text-gray-500 py-2">
-                  No highlights yet. Select text in the PDF to create
-                  highlights.
-                </li>
+
+            {/* Per-Page Fields */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-sm">
+                  {useSchemaForm ? "Schema Fields" : "Document Fields"}
+                </h3>
+              </div>
+
+              {useSchemaForm && parsedSchema ? (
+                <SchemaForm
+                  sections={parsedSchema}
+                  data={pageForm}
+                  onDataChange={handleSchemaDataChange}
+                  onLinkHighlight={(path) => {
+                    const userHighlights = highlights.filter(
+                      (h) => h.kind === "user"
+                    );
+
+                    if (pendingHighlightLinkPath === path) {
+                      setPendingHighlightLinkPath(null);
+                      info("Highlight linking cancelled");
+                      return;
+                    }
+
+                    if (userHighlights.length === 0) {
+                      error("Create a highlight before linking");
+                      return;
+                    }
+
+                    if (userHighlights.length === 1) {
+                      info(`Link highlight to field: ${path}`);
+                      linkHighlightToField(path, userHighlights[0].id);
+                      return;
+                    }
+
+                    info(`Select a highlight to link to field: ${path}`);
+                    setPendingHighlightLinkPath(path);
+                  }}
+                />
+              ) : (
+                <>
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {currentPageTemplate.map((f) => {
+                      // Document-level: use field ID directly
+                      const inputId = `field-${f.id}`;
+                      return (
+                        <div key={f.id} className="space-y-1">
+                          <label htmlFor={inputId} className="text-xs">
+                            {f.label}
+                          </label>
+                          <input
+                            id={inputId}
+                            className="w-full border p-1 rounded text-sm"
+                            placeholder={f.placeholder || ""}
+                            value={pageForm[f.id] || ""}
+                            onChange={(e) =>
+                              handleTemplateInput(f.id, e.target.value)
+                            }
+                            aria-label={f.label}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
               )}
-              {highlights.map((h) => (
-                <li
-                  key={h.id}
-                  className="py-2 flex items-center justify-between"
-                >
-                  <div>
-                    <div className="font-medium text-xs flex items-center gap-2">
-                      <span
-                        className={`w-3 h-3 rounded ${
-                          h.kind === "search" ? "bg-yellow-400" : "bg-green-400"
-                        }`}
-                      ></span>
-                      {h.label}
+            </div>
+
+            {/* Highlights */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-sm">Your Highlights</h3>
+                {pendingHighlightLinkPath && (
+                  <button
+                    className="text-xs text-blue-600 hover:text-blue-700"
+                    onClick={() => setPendingHighlightLinkPath(null)}
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+              {pendingHighlightLinkPath && (
+                <div className="text-xs text-blue-600">
+                  Select a highlight below to link to {pendingHighlightLinkPath}
+                </div>
+              )}
+              <ul className="text-sm divide-y max-h-56 overflow-auto">
+                {highlights.length === 0 && (
+                  <li className="text-xs text-gray-500 py-2">
+                    No highlights yet. Select text in the PDF to create
+                    highlights.
+                  </li>
+                )}
+                {highlights.map((h) => (
+                  <li
+                    key={h.id}
+                    className="py-2 flex items-center justify-between"
+                  >
+                    <div>
+                      <div className="font-medium text-xs flex items-center gap-2">
+                        <span
+                          className={`w-3 h-3 rounded ${
+                            h.kind === "search"
+                              ? "bg-yellow-400"
+                              : "bg-green-400"
+                          }`}
+                        ></span>
+                        {h.label}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        p.{h.pageNumber}
+                      </div>
                     </div>
-                    <div className="text-xs text-gray-500">
-                      p.{h.pageNumber}
-                    </div>
-                  </div>
-                  <div className="flex gap-1">
-                    {pendingHighlightLinkPath && h.kind === "user" && (
+                    <div className="flex gap-1">
+                      {pendingHighlightLinkPath && h.kind === "user" && (
+                        <button
+                          className="px-2 text-xs border rounded border-blue-300 text-blue-600 hover:text-blue-700 hover:border-blue-400"
+                          onClick={() =>
+                            linkHighlightToField(
+                              pendingHighlightLinkPath!,
+                              h.id
+                            )
+                          }
+                          aria-label={`Link highlight: ${h.label}`}
+                        >
+                          Link
+                        </button>
+                      )}
                       <button
-                        className="px-2 text-xs border rounded border-blue-300 text-blue-600 hover:text-blue-700 hover:border-blue-400"
-                        onClick={() =>
-                          linkHighlightToField(pendingHighlightLinkPath!, h.id)
-                        }
-                        aria-label={`Link highlight: ${h.label}`}
+                        className="px-2 text-xs border rounded"
+                        onClick={() => jumpToPage(h.pageNumber)}
+                        aria-label={`Go to highlight on page ${h.pageNumber}`}
                       >
-                        Link
+                        Go
                       </button>
-                    )}
-                    <button
-                      className="px-2 text-xs border rounded"
-                      onClick={() => jumpToPage(h.pageNumber)}
-                      aria-label={`Go to highlight on page ${h.pageNumber}`}
-                    >
-                      Go
-                    </button>
-                    {h.kind === "user" && (
-                      <>
-                        <button
-                          className="px-2 text-xs border rounded"
-                          onClick={() => relabelHighlight(h.id)}
-                          aria-label={`Edit label for highlight: ${h.label}`}
-                        >
-                          ✏
-                        </button>
-                        <button
-                          className="px-2 text-xs border rounded"
-                          onClick={() => deleteHighlight(h.id)}
-                          aria-label={`Delete highlight: ${h.label}`}
-                        >
-                          ✕
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </aside>
+                      {h.kind === "user" && (
+                        <>
+                          <button
+                            className="px-2 text-xs border rounded"
+                            onClick={() => relabelHighlight(h.id)}
+                            aria-label={`Edit label for highlight: ${h.label}`}
+                          >
+                            ✏
+                          </button>
+                          <button
+                            className="px-2 text-xs border rounded"
+                            onClick={() => deleteHighlight(h.id)}
+                            aria-label={`Delete highlight: ${h.label}`}
+                          >
+                            ✕
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </aside>
         )}
       </main>
 

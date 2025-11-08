@@ -91,9 +91,7 @@ export const PageNavigationButtons = ({
           max={pages}
           aria-label="Go to page"
         />
-        <span className="text-sm text-gray-600 font-medium">
-          / {pages}
-        </span>
+        <span className="text-sm text-gray-600 font-medium">/ {pages}</span>
       </div>
 
       {/* Next Page Button */}

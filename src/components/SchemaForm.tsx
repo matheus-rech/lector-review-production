@@ -138,8 +138,8 @@ export const SchemaForm: React.FC<SchemaFormProps> = ({
                 field.type === "number"
                   ? parseFloat(e.target.value)
                   : field.type === "integer"
-                  ? parseInt(e.target.value)
-                  : e.target.value;
+                    ? parseInt(e.target.value)
+                    : e.target.value;
               onDataChange(
                 path,
                 createSourcedValue(
@@ -231,8 +231,8 @@ export const SchemaForm: React.FC<SchemaFormProps> = ({
                 field.type === "number"
                   ? parseFloat(e.target.value)
                   : field.type === "integer"
-                  ? parseInt(e.target.value)
-                  : e.target.value;
+                    ? parseInt(e.target.value)
+                    : e.target.value;
               onDataChange(path, val);
             }}
             placeholder={field.description}

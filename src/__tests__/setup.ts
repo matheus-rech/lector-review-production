@@ -20,18 +20,18 @@ const localStorageMock = (() => {
   };
 })();
 
-Object.defineProperty(globalThis, 'localStorage', {
+Object.defineProperty(globalThis, "localStorage", {
   value: localStorageMock,
   writable: true,
 });
 
 // Mock URL.createObjectURL
-Object.defineProperty(globalThis.URL, 'createObjectURL', {
-  value: () => 'mock-url',
+Object.defineProperty(globalThis.URL, "createObjectURL", {
+  value: () => "mock-url",
   writable: true,
 });
 
-Object.defineProperty(globalThis.URL, 'revokeObjectURL', {
+Object.defineProperty(globalThis.URL, "revokeObjectURL", {
   value: () => {},
   writable: true,
 });
