@@ -26,6 +26,7 @@ export const PageNavigationButtons = ({
   };
 
   const handleFirstPage = () => {
+    console.log("PageNavigationButtons: handleFirstPage clicked. Current page:", currentPage);
     jumpToPage(1, { behavior: "auto" });
   };
 
