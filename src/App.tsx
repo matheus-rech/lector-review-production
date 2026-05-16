@@ -1213,6 +1213,7 @@ export default function App() {
                   onRequestHighlightLabel={handleRequestHighlightLabel}
                 />
               </div>
+              <PageNavigationButtons onPageChange={handlePageChange} />
             </div>
           </Root>
         </div>
