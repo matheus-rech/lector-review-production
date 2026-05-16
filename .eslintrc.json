@@ -15,14 +15,35 @@
       "jsx": true
     }
   },
-  "plugins": ["react-refresh"],
+  "plugins": [
+    "react-refresh"
+  ],
   "rules": {
     "react-refresh/only-export-components": [
       "warn",
-      { "allowConstantExport": true }
+      {
+        "allowConstantExport": true
+      }
     ],
     "no-unused-vars": "off",
     "@typescript-eslint/no-unused-vars": "off"
   },
-  "ignorePatterns": ["dist", "node_modules", "*.config.js", "*.config.ts"]
+  "ignorePatterns": [
+    "dist",
+    "node_modules",
+    "*.config.js",
+    "*.config.ts"
+  ],
+  "overrides": [
+    {
+      "files": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/__tests__/**"
+      ],
+      "rules": {
+        "@typescript-eslint/no-explicit-any": "off"
+      }
+    }
+  ]
 }
