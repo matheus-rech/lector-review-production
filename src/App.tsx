@@ -1212,6 +1212,7 @@ export default function App() {
                   onJumpToPageReady={handleJumpToPageReady}
                   onRequestHighlightLabel={handleRequestHighlightLabel}
                 />
+            </div>
               </div>
           </Root>
             <PageNavigationButtons onPageChange={handlePageChange} />
