@@ -392,9 +392,6 @@ function PDFViewerContent({
           </CustomLayer>
         </Page>
       </Pages>
-
-      {/* Page Navigation Buttons - Inside Root for context access */}
-      <PageNavigationButtons onPageChange={onPageChange} />
     </div>
   );
 }
