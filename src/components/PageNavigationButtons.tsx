@@ -10,6 +10,7 @@ export const PageNavigationButtons = ({
 }: PageNavigationButtonsProps) => {
   const pages = usePdf((state) => state.pdfDocumentProxy?.numPages) || 1;
   const currentPage = usePdf((state) => state.currentPage) || 1;
+  console.log(`[PageNavigationButtons] Rendered. CurrentPage: ${currentPage}, TotalPages: ${pages}`);
   const [pageNumber, setPageNumber] = useState<string | number>(currentPage);
   const { jumpToPage } = usePdfJump();
 
