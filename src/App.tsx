@@ -1213,9 +1213,8 @@ export default function App() {
                   onRequestHighlightLabel={handleRequestHighlightLabel}
                 />
               </div>
-              <PageNavigationButtons onPageChange={handlePageChange} />
-            </div>
           </Root>
+            <PageNavigationButtons onPageChange={handlePageChange} />
         </div>
 
         {/* Right sidebar */}
