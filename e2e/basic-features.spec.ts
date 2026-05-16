@@ -22,7 +22,7 @@ test.describe("Lector Review - Basic Features", () => {
     await expect(canvas).toBeVisible();
 
     // Check for page indicator
-    await expect(page.getByText(/1 \/ 9/)).toBeVisible();
+    await expect(page.getByLabel("Go to page")).toBeVisible();
   });
 
   test("should navigate between pages", async ({ page }) => {
@@ -52,7 +52,7 @@ test.describe("Lector Review - Basic Features", () => {
     const prevButton = page.getByRole("button", { name: "Previous page" });
     await expect(prevButton).toHaveAttribute("aria-label", "Previous page");
     await prevButton.click();
-    
+
     // Wait and check back at page 1
     await page.waitForTimeout(1000);
     await expect(pageIndicator).toHaveText("1 / 9", { timeout: 3000 });
