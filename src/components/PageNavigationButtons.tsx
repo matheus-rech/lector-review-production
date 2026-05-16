@@ -69,7 +69,7 @@ export const PageNavigationButtons = ({
 
       {/* Page Input */}
       <div className="flex items-center gap-2">
-        <span className="sr-only">
+        <span className="sr-only" data-testid="page-indicator">
           {currentPage} / {pages}
         </span>
         <input
