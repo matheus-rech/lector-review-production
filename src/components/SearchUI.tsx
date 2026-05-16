@@ -7,7 +7,7 @@ import {
   usePdfJump,
   useSearch,
 } from "@anaralabs/lector";
-import { useDebounce } from "@/hooks";
+import { useDebounce } from "@/hooks"; // Using local custom hook, not npm package
 import { useEffect, useState } from "react";
 
 interface ResultItemProps {
