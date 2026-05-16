@@ -66,7 +66,7 @@ test.describe("Lector Review - Basic Features", () => {
 
       // Navigate to another page and wait for page indicator
       await page.getByRole("button", { name: "Next page" }).click();
-      await expect(page.getByText(/2 \/ \d+/)).toBeVisible({ timeout: 3000 });
+      await expect(page.getByTestId("page-indicator")).toHaveText(/2 \/ \d+/, { timeout: 3000 });
 
       // Navigate back and wait for page indicator
       await page.getByRole("button", { name: "Previous page" }).click();
