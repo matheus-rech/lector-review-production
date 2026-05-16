@@ -69,6 +69,7 @@ export const PageNavigationButtons = ({
 
       {/* Page Input */}
       <div className="flex items-center gap-2">
+        <span className="sr-only">{currentPage} / {pages}</span>
         <input
           type="number"
           value={pageNumber}
