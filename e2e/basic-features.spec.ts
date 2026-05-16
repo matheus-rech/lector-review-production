@@ -31,12 +31,13 @@ test.describe("Lector Review - Basic Features", () => {
       console.log("BROWSER:", msg.text());
     });
 
-    // Ensure we start at page 1
+    // Wait for PDF to be fully stable
+    await page.waitForTimeout(1000);
     const firstPageButton = page.getByRole("button", { name: "First page" });
     await firstPageButton.click();
 
     // Check initial page indicator
-    const pageIndicator = page.getByTestId("page-indicator");
+    const pageIndicator = page.getByTestId("page-indicator").first();
     await expect(pageIndicator).toHaveText("1 / 9");
 
     console.log("===== CLICKING NEXT PAGE BUTTON =====");
