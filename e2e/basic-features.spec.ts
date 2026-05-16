@@ -31,6 +31,10 @@ test.describe("Lector Review - Basic Features", () => {
       console.log("BROWSER:", msg.text());
     });
 
+    // Ensure we start at page 1
+    const firstPageButton = page.getByRole("button", { name: "First page" });
+    await firstPageButton.click();
+
     // Check initial page indicator
     const pageIndicator = page.getByTestId("page-indicator");
     await expect(pageIndicator).toHaveText("1 / 9");
