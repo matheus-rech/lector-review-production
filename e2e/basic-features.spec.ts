@@ -66,11 +66,15 @@ test.describe("Lector Review - Basic Features", () => {
 
       // Navigate to another page and wait for page indicator
       await page.getByRole("button", { name: "Next page" }).click();
-      await expect(page.getByTestId("page-indicator")).toHaveText(/2 \/ \d+/, { timeout: 3000 });
+      await expect(page.getByTestId("page-indicator")).toHaveText(/2 \/ \d+/, {
+        timeout: 3000,
+      });
 
       // Navigate back and wait for page indicator
       await page.getByRole("button", { name: "Previous page" }).click();
-      await expect(page.getByTestId("page-indicator")).toHaveText(/1 \/ \d+/, { timeout: 3000 });
+      await expect(page.getByTestId("page-indicator")).toHaveText(/1 \/ \d+/, {
+        timeout: 3000,
+      });
 
       // Check data persists
       await expect(studyIdInput).toHaveValue("10.1234/test.2024");
