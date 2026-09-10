@@ -38,6 +38,7 @@ import { SchemaForm } from "./components/SchemaForm";
 import { TemplateManager } from "./components/TemplateManager";
 import { Toast, useToast } from "./components/Toast";
 import { usePDFManager } from "./hooks/usePDFManager";
+import { readJsonFromLocalStorage } from "./utils/readJsonFromLocalStorage";
 import { createSourcedValue, parseSchema } from "./utils/schemaParser";
 
 // Configure PDF.js worker
@@ -392,9 +393,6 @@ function PDFViewerContent({
           </CustomLayer>
         </Page>
       </Pages>
-
-      {/* Page Navigation Buttons - Inside Root for context access */}
-      <PageNavigationButtons onPageChange={onPageChange} />
     </div>
   );
 }
@@ -405,10 +403,9 @@ export default function App() {
   const { toasts, success, error, info, removeToast } = useToast();
 
   /** Projects */
-  const [projects, setProjects] = useState<string[]>(() => {
-    const saved = localStorage.getItem("projects");
-    return saved ? JSON.parse(saved) : ["default"];
-  });
+  const [projects, setProjects] = useState<string[]>(() =>
+    readJsonFromLocalStorage("projects", ["default"])
+  );
   const [currentProject, setCurrentProject] = useState("default");
 
   /** PDF Source */
@@ -474,17 +471,16 @@ export default function App() {
   /** Search */
 
   /** Highlights */
-  const [highlights, setHighlights] = useState<LabeledHighlight[]>(() => {
-    const saved = localStorage.getItem(`proj:${currentProject}:highlights`);
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [highlights, setHighlights] = useState<LabeledHighlight[]>(() =>
+    readJsonFromLocalStorage(`proj:${currentProject}:highlights`, [])
+  );
 
   /** Field Templates */
   const [templates, setTemplates] = useState<FieldTemplate[]>(() => {
-    const saved = localStorage.getItem(`proj:${currentProject}:templates`);
-    if (!saved) return defaultTemplates;
-
-    const parsed = JSON.parse(saved);
+    const parsed = readJsonFromLocalStorage<unknown>(
+      `proj:${currentProject}:templates`,
+      defaultTemplates
+    );
     // Migration: convert old page-based format to document-level array
     if (!Array.isArray(parsed)) {
       // Silent migration to new format
@@ -494,10 +490,9 @@ export default function App() {
   });
 
   /** Page Form Data */
-  const [pageForm, setPageForm] = useState<Record<string, any>>(() => {
-    const saved = localStorage.getItem(`proj:${currentProject}:pageForm`);
-    return saved ? JSON.parse(saved) : {};
-  });
+  const [pageForm, setPageForm] = useState<Record<string, any>>(() =>
+    readJsonFromLocalStorage(`proj:${currentProject}:pageForm`, {})
+  );
   const [pendingHighlightLinkPath, setPendingHighlightLinkPath] = useState<
     string | null
   >(null);
@@ -636,14 +631,11 @@ export default function App() {
   /** Switch project */
   const switchProject = (proj: string) => {
     setCurrentProject(proj);
-    const savedHighlights = localStorage.getItem(`proj:${proj}:highlights`);
-    setHighlights(savedHighlights ? JSON.parse(savedHighlights) : []);
-    const savedTemplates = localStorage.getItem(`proj:${proj}:templates`);
+    setHighlights(readJsonFromLocalStorage(`proj:${proj}:highlights`, []));
     setTemplates(
-      savedTemplates ? JSON.parse(savedTemplates) : defaultTemplates
+      readJsonFromLocalStorage(`proj:${proj}:templates`, defaultTemplates)
     );
-    const savedForm = localStorage.getItem(`proj:${proj}:pageForm`);
-    setPageForm(savedForm ? JSON.parse(savedForm) : {});
+    setPageForm(readJsonFromLocalStorage(`proj:${proj}:pageForm`, {}));
     setPendingHighlightLinkPath(null);
     success(`Switched to project: ${proj}`);
   };
@@ -1009,7 +1001,10 @@ export default function App() {
       />
 
       {/* Left sidebar */}
-      <aside className="w-64 border-r p-3 space-y-4 bg-white overflow-y-auto">
+      <aside
+        aria-label="Project and PDF management"
+        className="w-64 border-r p-3 space-y-4 bg-white overflow-y-auto"
+      >
         {/* Project selector */}
         <div className="space-y-1">
           <label className="text-xs font-semibold">Project</label>
@@ -1107,9 +1102,10 @@ export default function App() {
         {/* PDF Viewer with Thumbnails and Zoom Controls */}
         <div className="flex flex-col h-full overflow-hidden">
           {/* PDF Viewer Grid with Optional Thumbnails - SINGLE Root wrapping everything */}
+          {/* min-h-0 keeps this flex item from growing to its content height, which would leave Lector's scroll viewport taller than the window and make its "page nearest the viewport centre" tracker report the wrong page */}
           <Root
             source={pdfSource}
-            className="flex-1 flex flex-col"
+            className="flex-1 flex flex-col min-h-0"
             zoomOptions={{ minZoom: 0.5, maxZoom: 3 }}
             loader={
               <div className="flex items-center justify-center h-full">
@@ -1217,12 +1213,18 @@ export default function App() {
                 />
               </div>
             </div>
+
+            {/* Sibling of the viewer rather than a child, so the fixed toolbar is not clipped by the scroll container, but still inside Root for the usePdf context it reads */}
+            <PageNavigationButtons onPageChange={handlePageChange} />
           </Root>
         </div>
 
         {/* Right sidebar */}
         {showSchemaForm && (
-          <aside className="border-l p-3 space-y-4 bg-white overflow-y-auto">
+          <aside
+            aria-label="Data extraction form"
+            className="border-l p-3 space-y-4 bg-white overflow-y-auto"
+          >
             {/* Form Type Toggle */}
             <div className="flex items-center gap-2">
               <button

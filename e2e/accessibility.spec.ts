@@ -46,7 +46,7 @@ test.describe("Lector Review - Accessibility", () => {
     await page.waitForTimeout(1000);
 
     // Verify page still works
-    await expect(page.getByText("Project")).toBeVisible();
+    await expect(page.getByText("Project", { exact: true })).toBeVisible();
   });
 
   test("should handle Escape key to close modals", async ({ page }) => {
@@ -87,7 +87,7 @@ test.describe("Lector Review - Accessibility", () => {
 
   test("should have proper form labels", async ({ page }) => {
     // Check that form inputs have associated labels
-    const searchInput = page.getByPlaceholder(/Search in PDF/i);
+    const searchInput = page.getByPlaceholder(/Search in document/i);
     if (await searchInput.isVisible()) {
       // Input should have placeholder or label
       const searchLabel = page.getByText(/Search/i).first();

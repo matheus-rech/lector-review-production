@@ -56,7 +56,7 @@ test.describe("Lector Review - Error Handling", () => {
     await page.waitForTimeout(3000);
 
     // Try searching with special characters that might cause issues
-    const searchInput = page.getByPlaceholder(/Search in PDF/i);
+    const searchInput = page.getByPlaceholder(/Search in document/i);
     if (await searchInput.isVisible()) {
       await searchInput.fill("[[[");
       await page.waitForTimeout(2000);
@@ -70,7 +70,9 @@ test.describe("Lector Review - Error Handling", () => {
 
   test("should handle schema parsing errors", async ({ page }) => {
     // Switch to Schema Form mode
-    const schemaFormButton = page.getByRole("button", { name: "Schema Form" });
+    const schemaFormButton = page.getByRole("button", {
+      name: "Switch to Schema Form",
+    });
     if (await schemaFormButton.isVisible()) {
       await schemaFormButton.click({ force: true });
       await page.waitForTimeout(1000);
@@ -128,7 +130,7 @@ test.describe("Lector Review - Error Handling", () => {
     await page.waitForTimeout(2000);
 
     // Verify core functionality still works
-    await expect(page.getByText("Project")).toBeVisible();
+    await expect(page.getByText("Project", { exact: true })).toBeVisible();
     await expect(page.getByText("Search").first()).toBeVisible();
 
     // Verify export buttons still work

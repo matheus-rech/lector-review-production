@@ -23,7 +23,7 @@ test.describe("Lector Review - Performance", () => {
   test("should handle search performance", async ({ page }) => {
     await page.waitForTimeout(3000); // Wait for PDF to load
 
-    const searchInput = page.getByPlaceholder(/Search in PDF/i);
+    const searchInput = page.getByPlaceholder(/Search in document/i);
     if (await searchInput.isVisible()) {
       const startTime = Date.now();
 
@@ -56,15 +56,16 @@ test.describe("Lector Review - Performance", () => {
   });
 
   test("should handle export performance", async ({ page }) => {
-    const startTime = Date.now();
-
     const exportJSONButton = page.getByRole("button", { name: "Export JSON" });
-    await exportJSONButton.click();
 
-    // Wait for download to start
-    const download = await page
+    // Arm the listener before the click: the export fires its download synchronously, so a listener attached afterwards misses the event and only ever times out
+    const downloadPromise = page
       .waitForEvent("download", { timeout: 5000 })
       .catch(() => null);
+
+    const startTime = Date.now();
+    await exportJSONButton.click();
+    const download = await downloadPromise;
 
     const exportTime = Date.now() - startTime;
 
@@ -97,7 +98,7 @@ test.describe("Lector Review - Performance", () => {
     expect(interactionTime).toBeLessThan(2000);
 
     // Verify page still works
-    await expect(page.getByText("Project")).toBeVisible();
+    await expect(page.getByText("Project", { exact: true })).toBeVisible();
   });
 
   test("should handle rapid project switching", async ({ page }) => {
@@ -134,8 +135,8 @@ test.describe("Lector Review - Performance", () => {
 
     // Fill multiple form fields
     const inputs = page
-      .locator('input[type="text"], input[type="number"]')
-      .filter({ hasNotText: "Search" });
+      .getByRole("complementary", { name: "Data extraction form" })
+      .getByRole("textbox");
     const inputCount = await inputs.count();
 
     if (inputCount > 0) {
@@ -240,7 +241,7 @@ test.describe("Lector Review - Performance", () => {
     }
 
     // App should still be responsive
-    await expect(page.getByText("Project")).toBeVisible();
+    await expect(page.getByText("Project", { exact: true })).toBeVisible();
     await expect(exportJSONButton).toBeEnabled();
   });
 });
