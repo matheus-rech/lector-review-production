@@ -42,6 +42,9 @@ export {
   type StoredPDF,
 } from "./pdfStorage";
 
+// Persistence Utilities
+export { readJsonFromLocalStorage } from "./readJsonFromLocalStorage";
+
 // Schema Parsing Utilities
 export {
   parseSchema,

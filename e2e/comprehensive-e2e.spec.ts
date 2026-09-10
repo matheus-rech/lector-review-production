@@ -20,7 +20,7 @@ test.describe("Lector Review - Comprehensive E2E Tests", () => {
 
   test("should load the application with all UI elements", async ({ page }) => {
     // Check for main UI elements in left sidebar
-    await expect(page.getByText("Project")).toBeVisible();
+    await expect(page.getByText("Project", { exact: true })).toBeVisible();
     await expect(page.getByText("PDF Management")).toBeVisible();
     await expect(page.getByText(/Or load from URL/)).toBeVisible();
     await expect(page.getByText("Search").first()).toBeVisible(); // Use .first() to handle multiple matches
@@ -32,8 +32,9 @@ test.describe("Lector Review - Comprehensive E2E Tests", () => {
     ).toBeVisible();
 
     // Check for right sidebar elements
-    await expect(page.getByText(/Page/)).toBeVisible();
-    await expect(page.getByText(/Fields for page|Schema Fields/)).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: /Document Fields|Schema Fields/ })
+    ).toBeVisible();
 
     // Accessibility check: Verify buttons have aria-labels
     const exportJSONButton = page.getByRole("button", { name: "Export JSON" });
@@ -141,7 +142,9 @@ test.describe("Lector Review - Comprehensive E2E Tests", () => {
     const templateFormButton = page.getByRole("button", {
       name: "Template Form",
     });
-    const schemaFormButton = page.getByRole("button", { name: "Schema Form" });
+    const schemaFormButton = page.getByRole("button", {
+      name: "Switch to Schema Form",
+    });
 
     if (await templateFormButton.isVisible()) {
       // Should start with Template Form active
@@ -294,7 +297,7 @@ test.describe("Lector Review - Comprehensive E2E Tests", () => {
 
   test("should perform PDF search", async ({ page }) => {
     // Find search input
-    const searchInput = page.getByPlaceholder(/Search in PDF/i);
+    const searchInput = page.getByPlaceholder(/Search in document/i);
     await searchInput.fill("test");
 
     // Wait for search to complete (debounced)
@@ -344,7 +347,7 @@ test.describe("Lector Review - Comprehensive E2E Tests", () => {
     await page.waitForTimeout(1000);
 
     // App should still be functional
-    await expect(page.getByText("Project")).toBeVisible();
+    await expect(page.getByText("Project", { exact: true })).toBeVisible();
   });
 
   test("should handle errors gracefully", async ({ page }) => {
@@ -363,7 +366,7 @@ test.describe("Lector Review - Comprehensive E2E Tests", () => {
       await page.waitForTimeout(1000);
 
       // Should handle error gracefully (either show error or prevent duplicate)
-      await expect(page.getByText("Project")).toBeVisible();
+      await expect(page.getByText("Project", { exact: true })).toBeVisible();
     }
   });
 

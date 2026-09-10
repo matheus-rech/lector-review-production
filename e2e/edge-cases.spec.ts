@@ -89,7 +89,7 @@ test.describe("Lector Review - Edge Cases", () => {
       await page.waitForTimeout(1000);
 
       // App should handle concurrent operations gracefully
-      await expect(page.getByText("Project")).toBeVisible();
+      await expect(page.getByText("Project", { exact: true })).toBeVisible();
     }
   });
 
@@ -105,7 +105,7 @@ test.describe("Lector Review - Edge Cases", () => {
     await page.waitForTimeout(2000);
 
     // App should recover gracefully
-    await expect(page.getByText("Project")).toBeVisible();
+    await expect(page.getByText("Project", { exact: true })).toBeVisible();
 
     // Should default to valid state
     const projectSelect = page.locator("select").first();
@@ -128,19 +128,19 @@ test.describe("Lector Review - Edge Cases", () => {
       await page.waitForTimeout(1000);
 
       // App should handle it gracefully
-      await expect(page.getByText("Project")).toBeVisible();
+      await expect(page.getByText("Project", { exact: true })).toBeVisible();
     }
   });
 
   test("should handle empty search queries", async ({ page }) => {
-    const searchInput = page.getByPlaceholder(/Search in PDF/i);
+    const searchInput = page.getByPlaceholder(/Search in document/i);
     if (await searchInput.isVisible()) {
       // Clear search
       await searchInput.fill("");
       await page.waitForTimeout(1000);
 
       // App should handle empty search without errors
-      await expect(page.getByText("Project")).toBeVisible();
+      await expect(page.getByText("Project", { exact: true })).toBeVisible();
     }
   });
 
@@ -161,7 +161,7 @@ test.describe("Lector Review - Edge Cases", () => {
       await page.waitForTimeout(1000);
 
       // Should handle rapid changes gracefully
-      await expect(page.getByText("Project")).toBeVisible();
+      await expect(page.getByText("Project", { exact: true })).toBeVisible();
     }
   });
 

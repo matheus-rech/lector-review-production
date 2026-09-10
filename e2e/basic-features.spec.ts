@@ -11,7 +11,7 @@ test.describe("Lector Review - Basic Features", () => {
     await expect(page).toHaveTitle(/Lector Review|Vite \+ React/);
 
     // Check for main UI elements
-    await expect(page.getByText("Project")).toBeVisible();
+    await expect(page.getByText("Project", { exact: true })).toBeVisible();
     await expect(page.getByText("PDF Management")).toBeVisible();
     await expect(page.getByText("Search").first()).toBeVisible();
   });
@@ -31,13 +31,8 @@ test.describe("Lector Review - Basic Features", () => {
       console.log("BROWSER:", msg.text());
     });
 
-    // Wait for PDF to be fully stable
-    await page.waitForTimeout(1000);
-    const firstPageButton = page.getByRole("button", { name: "First page" });
-    await firstPageButton.click();
-
     // Check initial page indicator
-    const pageIndicator = page.getByTestId("page-indicator").first();
+    const pageIndicator = page.getByTestId("page-indicator");
     await expect(pageIndicator).toHaveText("1 / 9");
 
     console.log("===== CLICKING NEXT PAGE BUTTON =====");
@@ -71,13 +66,13 @@ test.describe("Lector Review - Basic Features", () => {
 
       // Navigate to another page and wait for page indicator
       await page.getByRole("button", { name: "Next page" }).click();
-      await expect(page.getByTestId("page-indicator").first()).toHaveText(/2 \/ \d+/, {
+      await expect(page.getByTestId("page-indicator")).toHaveText(/2 \/ \d+/, {
         timeout: 3000,
       });
 
       // Navigate back and wait for page indicator
       await page.getByRole("button", { name: "Previous page" }).click();
-      await expect(page.getByTestId("page-indicator").first()).toHaveText(/1 \/ \d+/, {
+      await expect(page.getByTestId("page-indicator")).toHaveText(/1 \/ \d+/, {
         timeout: 3000,
       });
 
@@ -151,7 +146,7 @@ test.describe("Lector Review - Basic Features", () => {
       page.getByRole("button", { name: "Template Form" })
     ).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Schema Form" })
+      page.getByRole("button", { name: "Switch to Schema Form" })
     ).toBeVisible();
   });
 });
